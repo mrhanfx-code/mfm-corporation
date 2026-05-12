@@ -58,7 +58,7 @@ class CorporateChatSystem {
     setupEventListeners() {
         // Send message
         document.getElementById('sendBtn').addEventListener('click', () => this.sendMessage());
-        document.getElementById('ceoMessage').addEventListener('keypress', (e) => {
+        document.querySelector('textarea[placeholder="Type your message to GM..."]').addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.sendMessage();
@@ -75,7 +75,7 @@ class CorporateChatSystem {
         document.getElementById('authForm').addEventListener('submit', (e) => this.handleAuthentication(e));
 
         // Settings
-        document.getElementById('settingsBtn').addEventListener('click', () => this.showSettings());
+        document.getElementById('settings-btn').addEventListener('click', () => this.showSettings());
         document.querySelector('.cancel-btn').addEventListener('click', () => this.closeModal('settingsModal'));
         document.getElementById('auth-status').addEventListener('click', () => this.showAuthentication());
     }
@@ -162,7 +162,7 @@ class CorporateChatSystem {
     }
 
     async sendMessage() {
-        const messageInput = document.getElementById('ceoMessage');
+        const messageInput = document.querySelector('textarea[placeholder="Type your message to GM..."]');
         const message = messageInput.value.trim();
         
         if (!message) return;
@@ -234,15 +234,8 @@ class CorporateChatSystem {
         return responses[command.type] || responses.general;
     }
 
-        // Simulate processing time
-        await this.simulateProcessing(1500 + Math.random() * 1500);
-
-        return {
-            message: responses[command.type] || responses.general,
-            commandType: command.type,
-            urgency: command.urgency,
-            actionItems: await this.generateActionItems(command)
-        };
+    async simulateProcessing(delay) {
+        return new Promise(resolve => setTimeout(resolve, delay));
     }
 
     async generateActionItems(command) {
