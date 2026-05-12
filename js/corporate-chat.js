@@ -165,31 +165,37 @@ class CorporateChatSystem {
         const messageInput = document.querySelector('textarea[placeholder="Type your message to GM..."]');
         const message = messageInput.value.trim();
         
-        if (!message) return;
-
-        // Add message to chat
-        this.addMessageToChat('ceo', message);
-        
-        // Clear input
-        messageInput.value = '';
-
-        // Process command
-        const command = this.commandProcessor.analyzeCommand(message);
-        
-        // Show typing indicator
-        this.showTypingIndicator();
-        
-        // Get GM response
-        const response = await this.getGMResponse(command);
-        
-        // Display GM response
-        this.addMessageToChat('gm', response.message);
-        
-        // Update team assignments
-        await this.updateTeamAssignments(command);
-        
-        // Hide typing indicator
-        this.hideTypingIndicator();
+        if (message) {
+            // Add user message to chat
+            this.addMessageToChat('ceo', message);
+            
+            // Clear input
+            messageInput.value = '';
+            
+            // Show typing indicator
+            this.showTypingIndicator();
+            
+            // Process command
+            const command = this.commandProcessor.analyzeCommand(message);
+            
+            // Get GM response
+            const response = await this.getGMResponse(command);
+            
+            // Display GM response
+            this.addMessageToChat('gm', response.message);
+            
+            // Check if visual content is requested
+            if (this.isVisualContentRequest(command)) {
+                // Generate and display visual content
+                await this.generateAndDisplayVisualContent(command);
+            }
+            
+            // Update team assignments
+            await this.updateTeamAssignments(command);
+            
+            // Hide typing indicator
+            this.hideTypingIndicator();
+        }
     }
 
     addMessageToChat(sender, content) {
@@ -240,6 +246,9 @@ class CorporateChatSystem {
             intelligence: `I'll engage our Business Intelligence Team for this analysis, CEO Remy. They'll process market data, generate insights, and create strategic reports. I'll have comprehensive business intelligence and actionable insights ready within 2-3 business days.`,
             analytics: `I'll coordinate our Data Analytics Team to process this, CEO Remy. They'll analyze metrics, create visualizations, and identify trends. I'll have detailed analytics reports and data-driven recommendations within 2-3 business days.`,
             integration: `I'll assign this to our Systems Integration Team, CEO Remy. They'll connect platforms, ensure compatibility, and optimize data flow. I'll have integration architecture and implementation plan ready within 2-4 business days.`,
+            marketing: `I'll coordinate our Marketing Team to create compelling visual content for you, CEO Remy. They'll design marketing materials, brand assets, and promotional content. I'll have visual deliverables ready within 2-3 business days with multiple design options.`,
+            content: `I'll engage our Content Creation Team to produce high-quality visual content, CEO Remy. They'll create graphics, videos, and multimedia assets. I'll have visual content ready for review within 2-3 business days with drafts and revisions.`,
+            social: `I'll coordinate our Social Media Team to create engaging visual content for platforms, CEO Remy. They'll design social media graphics, banners, and video content. I'll have visual assets ready within 1-2 business days optimized for each platform.`,
             general: `I'll coordinate the appropriate teams to handle this request for you, CEO Remy. Let me analyze the requirements and assign the best-suited team. I'll provide you with a detailed action plan and timeline within the next few hours.`
         };
 
@@ -249,7 +258,123 @@ class CorporateChatSystem {
             return `I'm immediately activating our Security Team and CISO protocols, CEO Remy. This is being treated as a critical security incident. The Security Team is conducting immediate threat assessment, the Legal Team is preparing compliance documentation, and I'm implementing our emergency response procedures. I'll provide you with real-time updates every 15 minutes until this is resolved.`;
         }
 
+        // Check if visual content generation is requested
+        if (this.isVisualContentRequest(command)) {
+            return responses[command.type] + ` I'll generate visual content and deliver it directly in this chat interface.`;
+        }
+
         return responses[command.type] || responses.general;
+    }
+
+    isVisualContentRequest(command) {
+        const visualKeywords = ['design', 'create', 'visual', 'image', 'graphic', 'banner', 'logo', 'poster', 'marketing', 'content', 'social media'];
+        const message = command.message.toLowerCase();
+        return visualKeywords.some(keyword => message.includes(keyword));
+    }
+
+    async generateVisualContent(command) {
+        // Simulate AI image generation
+        const visualType = this.determineVisualType(command);
+        const prompt = this.extractVisualPrompt(command);
+        
+        // Generate placeholder image (in production, this would call an AI image generation API)
+        const imageUrl = await this.generateImage(prompt, visualType);
+        
+        return {
+            type: visualType,
+            imageUrl: imageUrl,
+            prompt: prompt,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    determineVisualType(command) {
+        const message = command.message.toLowerCase();
+        if (message.includes('logo')) return 'logo';
+        if (message.includes('banner')) return 'banner';
+        if (message.includes('poster')) return 'poster';
+        if (message.includes('social')) return 'social_media';
+        if (message.includes('marketing')) return 'marketing';
+        return 'general';
+    }
+
+    extractVisualPrompt(command) {
+        // Extract key visual elements from the command
+        const message = command.message;
+        const visualElements = message.match(/(?:design|create|make)\s+(.+?)(?:\s+for|\s+with|\s*$)/i);
+        return visualElements ? visualElements[1] : message;
+    }
+
+    async generateImage(prompt, type) {
+        // Placeholder image generation (in production, integrate with AI image API)
+        const width = type === 'banner' ? 1200 : 800;
+        const height = type === 'banner' ? 400 : 600;
+        
+        // Generate a data URL placeholder image
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        // Create gradient background
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, '#667eea');
+        gradient.addColorStop(1, '#764ba2');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        
+        // Add text
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${type.toUpperCase()}`, width/2, height/2 - 20);
+        ctx.font = '16px Arial';
+        ctx.fillText(`Generated for: ${prompt}`, width/2, height/2 + 20);
+        
+        return canvas.toDataURL();
+    }
+
+    async generateAndDisplayVisualContent(command) {
+        // Show loading message
+        this.addMessageToChat('gm', '🎨 Generating visual content...');
+        
+        // Generate visual content
+        const visualContent = await this.generateVisualContent(command);
+        
+        // Display visual content in chat
+        this.addVisualContentToChat(visualContent);
+        
+        // Add completion message
+        this.addMessageToChat('gm', `✅ ${visualContent.type.toUpperCase()} visual content generated successfully!`);
+    }
+
+    addVisualContentToChat(visualContent) {
+        const chatWindow = document.getElementById('chatWindow');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message gm-message';
+        
+        const timestamp = new Date().toLocaleTimeString();
+        
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <span class="sender">🔵 General Manager</span>
+                <span class="timestamp">${timestamp}</span>
+            </div>
+            <div class="message-content">
+                <div class="visual-content">
+                    <img src="${visualContent.imageUrl}" alt="${visualContent.type}" class="generated-image" />
+                    <div class="visual-info">
+                        <p><strong>Type:</strong> ${visualContent.type}</p>
+                        <p><strong>Prompt:</strong> ${visualContent.prompt}</p>
+                        <p><strong>Generated:</strong> ${new Date(visualContent.timestamp).toLocaleString()}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        chatWindow.appendChild(messageDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
     async simulateProcessing(delay) {

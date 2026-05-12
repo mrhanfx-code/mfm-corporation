@@ -172,9 +172,45 @@ body {
 }
 
 .ceo-message .message-content {
+    background: var(--light-color);
+    color: var(--dark-color);
+}
+
+.gm-message .message-content {
     background: var(--primary-color);
     color: white;
-    border-left-color: var(--success-color);
+}
+
+/* Visual Content Styles */
+.visual-content {
+    margin-top: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+}
+
+.generated-image {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.visual-info {
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.visual-info p {
+    margin: 0.25rem 0;
+}
+
+.visual-info strong {
+    color: #fff;
+    font-weight: 600;
 }
 
 /* Chat Input */
