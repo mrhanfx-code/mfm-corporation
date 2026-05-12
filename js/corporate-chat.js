@@ -571,9 +571,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.corporateChat = new CorporateChatSystem();
 });
 
-// Export for global access
-window.corporateChat = CorporateChatSystem;
-
 // Add CEO Remy status check function
 window.corporateChat.checkAllAgentStatus = function() {
     return {
