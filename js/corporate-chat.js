@@ -569,16 +569,16 @@ class TeamManager {
 // Initialize system when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.corporateChat = new CorporateChatSystem();
-});
-
-// Add CEO Remy status check function
-window.corporateChat.checkAllAgentStatus = function() {
-    return {
-        teams: 'All 19 teams are operational and ready for CEO Remy commands',
-        executives: 'All 5 C-Level executives are active and coordinating teams',
-        system: 'MFM Corporation is fully operational at https://mrhanfx-code.github.io/mfm-corporation',
-        database: 'Supabase database is configured and ready for real-time operations',
-        authentication: 'CEO Remy authentication with 2FA is ready',
-        lastUpdate: new Date().toISOString()
+    
+    // Add CEO Remy status check function
+    window.corporateChat.checkAllAgentStatus = function() {
+        return {
+            teams: 'All 19 teams are operational and ready for CEO Remy commands',
+            executives: 'All 5 C-Level executives are active and coordinating teams',
+            system: 'MFM Corporation is fully operational at https://mrhanfx-code.github.io/mfm-corporation',
+            database: 'Supabase database is configured and ready for real-time operations',
+            authentication: 'CEO Remy authentication with 2FA is ready',
+            lastUpdate: new Date().toISOString()
+        };
     };
-};
+});
