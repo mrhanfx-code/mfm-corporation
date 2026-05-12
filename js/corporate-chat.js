@@ -231,8 +231,23 @@ class CorporateChatSystem {
             research: `I'll coordinate the Innovation & Market Intelligence teams to research this for you, CEO Remy. The Innovation Team will handle technical research while the Market Intelligence Team analyzes market aspects. I'll provide you with comprehensive findings within 3-5 business days and keep you updated on our progress throughout the process.`,
             design: `I'll assign this to the CTO and their development teams to create a comprehensive design for you, CEO Remy. We'll develop system architecture, user interface, and implementation timeline. Expect a detailed design proposal within 2-4 business days with regular progress updates.`,
             business: `The CFO and I will work with all C-Level executives to create a complete business plan for you, CEO Remy. This will include financial projections, market strategy, operational plans, and risk analysis. I'll have a comprehensive business plan ready for your review within 1-2 weeks with continuous updates on our progress.`,
-            issues: `I'll route this to the appropriate C-Level executive based on the issue type, CEO Remy. The relevant teams will analyze the problem and provide solutions. I'll ensure we address the root cause and implement preventive measures. You'll have a resolution plan within 24-48 hours with immediate updates on our progress.`
+            issues: `I'll route this to the appropriate C-Level executive based on the issue type, CEO Remy. The relevant teams will analyze the problem and provide solutions. I'll ensure we address the root cause and implement preventive measures. You'll have a resolution plan within 24-48 hours with immediate updates on our progress.`,
+            support: `I'll coordinate our Customer Support Team to handle this for you, CEO Remy. They'll provide immediate assistance, document the inquiry, and ensure client satisfaction. I'll have a support ticket created and resolution plan within 1-2 hours with continuous status updates.`,
+            hr: `I'll work with our HR Team to handle this request, CEO Remy. They'll manage recruitment, employee relations, and organizational development. I'll have HR processes initiated and candidate screening or employee programs ready within 3-5 business days.`,
+            legal: `I'll engage our Legal Team immediately, CEO Remy. They'll handle contracts, compliance, and regulatory matters. I'll have legal documentation reviewed and risk assessment completed within 2-3 business days with detailed recommendations.`,
+            technology: `I'll coordinate our Technology Tracking Team to monitor this for you, CEO Remy. They'll track emerging technologies, market trends, and innovation opportunities. I'll provide comprehensive technology analysis and recommendations within 3-5 business days.`,
+            project: `I'll assign this to our Project Management Team, CEO Remy. They'll coordinate resources, timelines, and deliverables across all teams. I'll have a detailed project plan with milestones and resource allocation ready within 1-2 business days.`,
+            intelligence: `I'll engage our Business Intelligence Team for this analysis, CEO Remy. They'll process market data, generate insights, and create strategic reports. I'll have comprehensive business intelligence and actionable insights ready within 2-3 business days.`,
+            analytics: `I'll coordinate our Data Analytics Team to process this, CEO Remy. They'll analyze metrics, create visualizations, and identify trends. I'll have detailed analytics reports and data-driven recommendations within 2-3 business days.`,
+            integration: `I'll assign this to our Systems Integration Team, CEO Remy. They'll connect platforms, ensure compatibility, and optimize data flow. I'll have integration architecture and implementation plan ready within 2-4 business days.`,
+            general: `I'll coordinate the appropriate teams to handle this request for you, CEO Remy. Let me analyze the requirements and assign the best-suited team. I'll provide you with a detailed action plan and timeline within the next few hours.`
         };
+
+        // Enhanced security response for urgent security matters
+        if (command.type === 'general' && command.urgency === 'high' && 
+            (command.message.includes('security') || command.message.includes('breach'))) {
+            return `I'm immediately activating our Security Team and CISO protocols, CEO Remy. This is being treated as a critical security incident. The Security Team is conducting immediate threat assessment, the Legal Team is preparing compliance documentation, and I'm implementing our emergency response procedures. I'll provide you with real-time updates every 15 minutes until this is resolved.`;
+        }
 
         return responses[command.type] || responses.general;
     }
@@ -503,6 +518,33 @@ class CommandProcessor {
     }
 
     detectCommandType(message) {
+        // Check for team-specific patterns first
+        if (/customer support|support|help|assist/i.test(message)) {
+            return 'support';
+        }
+        if (/hr|human resources|recruit|hire|staff|personnel/i.test(message)) {
+            return 'hr';
+        }
+        if (/legal|contract|compliance|regulation/i.test(message)) {
+            return 'legal';
+        }
+        if (/technology|trends|monitor|track/i.test(message)) {
+            return 'technology';
+        }
+        if (/project|coordinate|manage|timeline/i.test(message)) {
+            return 'project';
+        }
+        if (/business intelligence|bi|analyze data|market data/i.test(message)) {
+            return 'intelligence';
+        }
+        if (/data analytics|metrics|process data/i.test(message)) {
+            return 'analytics';
+        }
+        if (/systems integration|connect platforms|integration/i.test(message)) {
+            return 'integration';
+        }
+        
+        // Check existing patterns
         for (const [type, patterns] of Object.entries(this.commandPatterns)) {
             for (const pattern of patterns) {
                 if (pattern.test(message)) {
