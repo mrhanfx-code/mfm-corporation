@@ -215,6 +215,9 @@ class CorporateChatSystem {
         // Generate personalized response for CEO Remy
         const personalizedResponse = await this.generatePersonalizedResponse(command);
         
+        // Simulate processing time
+        await this.simulateProcessing(1500 + Math.random() * 1500);
+        
         return {
             message: personalizedResponse,
             commandType: command.type,
