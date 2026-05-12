@@ -1,0 +1,41 @@
+{
+  "name": "mfm-corporation",
+  "version": "1.0.0",
+  "description": "MFM Corporation - CEO Remy Command Center with 19 specialized teams",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Build completed - Static files ready for deployment'",
+    "dev": "echo 'Development mode - Open index.html in browser'",
+    "deploy": "echo 'Deploy to GitHub Pages via GitHub Actions'",
+    "test": "echo 'Tests would run here'",
+    "lint": "echo 'Linting would run here'",
+    "serve": "python -m http.server 8000"
+  },
+  "keywords": [
+    "corporate",
+    "automation",
+    "ai",
+    "teams",
+    "management",
+    "ceo",
+    "chat",
+    "real-time"
+  ],
+  "author": "CEO Remy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrhanfx-code/mfm-corporation.git"
+  },
+  "homepage": "https://mrhanfx-code.github.io/mfm-corporation",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {},
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

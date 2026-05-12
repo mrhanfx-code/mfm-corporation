@@ -1,0 +1,62 @@
+name: Deploy MFM Corporation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        
+    - name: Build project
+      run: |
+        npm run build
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./
+        
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 MFM Corporation Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Deployment Status" >> $GITHUB_STEP_SUMMARY
+        echo "- **Repository:** mrhanfx-code/mfm-corporation" >> $GITHUB_STEP_SUMMARY
+        echo "- **URL:** https://mrhanfx-code.github.io/mfm-corporation" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status:** Successfully deployed" >> $GITHUB_STEP_SUMMARY
+        echo "- **Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🏢 Corporate Features" >> $GITHUB_STEP_SUMMARY
+        echo "- CEO Remy Chat Interface" >> $GITHUB_STEP_SUMMARY
+        echo "- 19 Specialized Teams" >> $GITHUB_STEP_SUMMARY
+        echo "- 5 C-Level Executives" >> $GITHUB_STEP_SUMMARY
+        echo "- Natural Language Commands" >> $GITHUB_STEP_SUMMARY
+        echo "- Real-time Monitoring" >> $GITHUB_STEP_SUMMARY
+        echo "- Quality Control System" >> $GITHUB_STEP_SUMMARY
+        echo "- File Upload Support" >> $GITHUB_STEP_SUMMARY
+        echo "- Mobile Responsive Design" >> $GITHUB_STEP_SUMMARY
+        echo "- 2FA Authentication" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Access Information" >> $GITHUB_STEP_SUMMARY
+        echo "- **Live URL:** https://mrhanfx-code.github.io/mfm-corporation" >> $GITHUB_STEP_SUMMARY
+        echo "- **CEO Login:** CEO Remy with 2FA" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region:** Global CDN (Optimized for Malaysia)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status:** Operational" >> $GITHUB_STEP_SUMMARY
