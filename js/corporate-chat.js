@@ -38,6 +38,14 @@ class CorporateChatSystem {
 
     createSupabaseClient() {
         // Use actual Supabase credentials from config.js
+        if (window.SUPABASE_CONFIG && window.supabase) {
+            return window.supabase.createClient(
+                window.SUPABASE_CONFIG.url,
+                window.SUPABASE_CONFIG.anonKey
+            );
+        }
+        
+        // Fallback to mock if Supabase not available
         return {
             from: (table) => ({
                 select: (columns) => Promise.resolve([]),
