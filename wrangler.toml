@@ -1,0 +1,26 @@
+name = "mfm-corporation"
+main = "src/index.js"
+compatibility_date = "2024-05-16"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "mfm-corporation-db"
+database_id = "your-database-id-here"
+
+# KV namespace binding
+[[kv_namespaces]]
+binding = "KV"
+id = "your-kv-namespace-id-here"
+preview_id = "your-preview-kv-namespace-id-here"
+
+# R2 bucket binding
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "mfm-corporation-uploads"

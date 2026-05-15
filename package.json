@@ -7,6 +7,10 @@
     "build": "echo 'Build completed - Static files ready for deployment'",
     "dev": "echo 'Development mode - Open index.html in browser'",
     "deploy": "echo 'Deploy to GitHub Pages via GitHub Actions'",
+    "deploy:cloudflare": "wrangler pages deploy",
+    "dev:cloudflare": "wrangler pages dev",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
     "test": "echo 'Tests would run here'",
     "lint": "echo 'Linting would run here'",
     "serve": "python -m http.server 8000"
@@ -31,7 +35,9 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  },
   "dependencies": {},
   "browserslist": [
     "> 1%",
