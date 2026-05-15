@@ -234,8 +234,9 @@ CREATE TRIGGER update_executive_status_trigger
     FOR EACH ROW
     EXECUTE FUNCTION update_executive_status();
 
--- Create View for Corporate Status
-CREATE OR REPLACE VIEW corporate_status AS
+-- Create View for Corporate Status with SECURITY INVOKER (PostgreSQL 15+)
+CREATE OR REPLACE VIEW corporate_status
+WITH (security_invoker = ON) AS
 SELECT 
     (SELECT COUNT(*) FROM teams WHERE status = 'available') as teams_available,
     (SELECT COUNT(*) FROM teams WHERE status = 'working') as teams_working,
