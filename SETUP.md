@@ -68,10 +68,10 @@ git push origin main
 
 ## 🔒 **Security Configuration**
 
-### **2FA Setup**
-1. **Install Google Authenticator** or **Authy** app
-2. **Scan QR code** when prompted during first login
-3. **Save backup codes** securely
+### **Authentication Setup**
+1. **Use email and password** for CEO Remy login
+2. **Session duration** is 24 hours
+3. **Automatic logout** after inactivity
 
 ### **Session Management**
 - **Session Duration:** 24 hours

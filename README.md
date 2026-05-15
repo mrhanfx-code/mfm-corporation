@@ -61,7 +61,7 @@ CEO Remy can chat naturally with the General Manager using:
 
 ## 🔒 Security
 
-- **Bank-level 2FA authentication**
+- **Secure email and password authentication**
 - **Encrypted data transmission**
 - **Secure session management**
 - **Role-based access control**

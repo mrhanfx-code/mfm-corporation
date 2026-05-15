@@ -100,8 +100,6 @@ CREATE TABLE IF NOT EXISTS ceo_authentication (
     user_id TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    totp_secret TEXT NOT NULL,
-    backup_codes TEXT[],
     session_token TEXT UNIQUE,
     session_expires TIMESTAMP,
     last_login TIMESTAMP,
