@@ -67,6 +67,15 @@ CEO Remy can chat naturally with the General Manager using:
 - **Role-based access control**
 - **Data privacy protection**
 
+## ⚡ Superpowers Integration
+
+- **Test-Driven Development**: RED-GREEN-REFACTOR methodology
+- **Systematic Debugging**: 4-phase root cause analysis
+- **Brainstorming**: Socratic design refinement
+- **Subagent Development**: Parallel agent workflows
+- **Code Review**: Two-stage quality verification
+- **Git Worktrees**: Parallel development branches
+
 ## 🌐 Malaysia Optimization
 
 - **Fast loading** from Malaysia (global CDN)
