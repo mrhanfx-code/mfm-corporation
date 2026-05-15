@@ -31,10 +31,12 @@ NODE_VERSION=18
 
 #### 1. Create Worker
 1. Navigate to **Workers & Pages**
-2. Click **Create application**
-3. Select **Hello World** template
-4. Name: `mfm-corporation-api`
-5. Deploy the worker
+2. Click **Create Worker**
+3. Name: `mfm-corporation-api`
+4. Click **Deploy**
+5. Click **Edit code**
+6. Replace default code with `src/index.js` content
+7. Click **Save and Deploy**
 
 #### 2. Update Worker Code
 Replace the worker code with `src/index.js` content
