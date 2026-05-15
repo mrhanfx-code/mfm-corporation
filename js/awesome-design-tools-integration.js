@@ -263,7 +263,6 @@ class AwesomeDesignToolsIntegration {
         this.createToolsPanel();
         this.setupSearchFunctionality();
         this.setupFilters();
-        this.setupToolCards();
     }
 
     // Create tools panel

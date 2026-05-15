@@ -1032,6 +1032,14 @@ body {
   }
 
   .tools-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-foreground);
+    font-family: var(--font-heading);
+    margin: 0 0 var(--spacing-md) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
   }
 
   .dashboard-header {
