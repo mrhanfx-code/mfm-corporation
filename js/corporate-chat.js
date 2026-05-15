@@ -6331,16 +6331,6 @@ class TrendAnalysisModel {
   }
 }
 
-class SentimentAnalysisModel {
-  async analyze(data) {
-    return {
-      sentiment: "positive",
-      confidence: 0.7,
-      key_topics: ["innovation", "growth"],
-    };
-  }
-}
-
 class PatternRecognitionModel {
   async analyze(data) {
     return { patterns: ["seasonal", "cyclical"], confidence: 0.6 };
