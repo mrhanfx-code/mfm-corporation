@@ -271,10 +271,7 @@ export default {
         default:
           response = new Response(
             JSON.stringify(createErrorResponse('Endpoint not found', 404, 'NOT_FOUND')),
-            { 
-              status: 404, 
-              headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
-            }
+            { status: 404, headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' } }
           );
       }
 
