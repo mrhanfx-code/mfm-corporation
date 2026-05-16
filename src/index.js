@@ -51,7 +51,7 @@ async function handleStatus(request, env) {
     platform: 'Cloudflare Pages',
     features: {
       database: !!env.DB,
-      kv_storage: !!env.KV,
+      kv_storage: !!env.KV_BINDING,
       r2_storage: !!env.BUCKET,
       workers: true
     },
@@ -65,7 +65,7 @@ async function handleStatus(request, env) {
 
 // Handle user preferences
 async function handleUserPreferences(request, env) {
-  if (!env.KV) {
+  if (!env.KV_BINDING) {
     return new Response(JSON.stringify({ error: 'KV storage not available' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' }
@@ -76,7 +76,7 @@ async function handleUserPreferences(request, env) {
   const userId = url.searchParams.get('userId') || 'default';
 
   if (request.method === 'GET') {
-    const preferences = await env.KV.get(`preferences:${userId}`);
+    const preferences = await env.KV_BINDING.get(`preferences:${userId}`);
     return new Response(preferences || '{}', {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -84,7 +84,7 @@ async function handleUserPreferences(request, env) {
 
   if (request.method === 'POST') {
     const preferences = await request.json();
-    await env.KV.put(`preferences:${userId}`, JSON.stringify(preferences));
+    await env.KV_BINDING.put(`preferences:${userId}`, JSON.stringify(preferences));
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
     });

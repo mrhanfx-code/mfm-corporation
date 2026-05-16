@@ -16,7 +16,7 @@ database_id = "91e8699c-2731-4f0d-8a09-9f9765e7e4cc"
 
 # KV namespace binding
 [[kv_namespaces]]
-binding = "KV"
+binding = "KV_BINDING"
 id = "b7fb55a0476d41b395fb36cf64b0a317"
 preview_id = "b7fb55a0476d41b395fb36cf64b0a317"
 
