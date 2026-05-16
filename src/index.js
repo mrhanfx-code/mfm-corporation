@@ -10,7 +10,8 @@ const SECURITY_CONFIG = {
   maxFileSize: 5 * 1024 * 1024, // 5MB (free-tier friendly)
   maxRequestSize: 1024 * 1024, // 1MB request size limit
   rateLimitPerMinute: 60, // Reduced for free-tier
-  requestTimeout: 15000 // 15 seconds (free-tier friendly)
+  requestTimeout: 15000, // 15 seconds (free-tier friendly)
+  allowedMethods: ['GET', 'POST', 'OPTIONS'] // HTTP method validation
 };
 
 // Rate limiting using KV - SECURE VERSION
@@ -52,6 +53,29 @@ const validateInput = {
     
     // Strict ASCII validation
     return /^[a-zA-Z0-9\-_]+$/.test(normalized);
+  },
+  // JSON validation with schema
+  validateJSON: (body) => {
+    try {
+      const parsed = JSON.parse(body);
+      return { valid: true, data: parsed };
+    } catch (error) {
+      return { valid: false, error: 'Invalid JSON format' };
+    }
+  },
+  // Schema validation for preferences
+  validatePreferencesSchema: (data) => {
+    if (!data || typeof data !== 'object') {
+      return { valid: false, error: 'Preferences must be an object' };
+    }
+    
+    // Check for nested objects (prevent deep nesting)
+    const jsonString = JSON.stringify(data);
+    if (jsonString.length > 10000) { // 10KB limit
+      return { valid: false, error: 'Preferences too large' };
+    }
+    
+    return { valid: true, data };
   }
 };
 
@@ -89,6 +113,46 @@ const createErrorResponse = (message, status = 500, code = 'INTERNAL_ERROR') => 
   };
 };
 
+// Response caching utility
+const cacheMiddleware = (cacheTime = 300) => {
+  return (response) => {
+    response.headers.set('Cache-Control', `public, max-age=${cacheTime}`);
+    response.headers.set('ETag', `"${Date.now()}"`);
+    return response;
+  };
+};
+
+// Performance monitoring
+const metrics = {
+  requestCount: 0,
+  errorCount: 0,
+  responseTime: [],
+  
+  recordRequest(duration, success) {
+    this.requestCount++;
+    if (!success) this.errorCount++;
+    this.responseTime.push(duration);
+    
+    // Keep only last 100 response times
+    if (this.responseTime.length > 100) {
+      this.responseTime.shift();
+    }
+  },
+  
+  getStats() {
+    const avgTime = this.responseTime.length > 0 
+      ? this.responseTime.reduce((a, b) => a + b, 0) / this.responseTime.length 
+      : 0;
+    
+    return {
+      totalRequests: this.requestCount,
+      errorRate: this.requestCount > 0 ? (this.errorCount / this.requestCount * 100) : 0,
+      avgResponseTime: Math.round(avgTime),
+      timestamp: new Date().toISOString()
+    };
+  }
+};
+
 // Logging utility
 const logRequest = (method, path, status, clientIP, userAgent) => {
   console.log(JSON.stringify({
@@ -113,6 +177,18 @@ export default {
     const userAgent = request.headers.get('User-Agent') || 'unknown';
 
     try {
+      // HTTP method validation (CRITICAL SECURITY)
+      if (!SECURITY_CONFIG.allowedMethods.includes(request.method)) {
+        logRequest(request.method, path, 405, clientIP, userAgent);
+        return new Response(
+          JSON.stringify(createErrorResponse('Method not allowed', 405, 'METHOD_NOT_ALLOWED')),
+          { 
+            status: 405, 
+            headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
       // Request size validation (free-tier protection)
       const contentLength = request.headers.get('Content-Length');
       if (contentLength && parseInt(contentLength, 10) > SECURITY_CONFIG.maxRequestSize) {
@@ -124,6 +200,34 @@ export default {
             headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
           }
         );
+      }
+
+      // Actual payload validation for POST requests
+      if (request.method === 'POST') {
+        try {
+          const body = await request.text();
+          if (body.length > SECURITY_CONFIG.maxRequestSize) {
+            logRequest(request.method, path, 413, clientIP, userAgent);
+            return new Response(
+              JSON.stringify(createErrorResponse('Payload too large', 413, 'PAYLOAD_TOO_LARGE')),
+              { 
+                status: 413, 
+                headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
+              }
+            );
+          }
+          // Store body for later use
+          request._body = body;
+        } catch (error) {
+          logRequest(request.method, path, 400, clientIP, userAgent);
+          return new Response(
+            JSON.stringify(createErrorResponse('Invalid request body', 400, 'INVALID_BODY')),
+            { 
+              status: 400, 
+              headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
+            }
+          );
+        }
       }
 
       // Rate limiting
@@ -231,10 +335,13 @@ async function handleStatus(request, env) {
       timestamp: new Date().toISOString()
     };
 
-    return new Response(JSON.stringify(status), {
+    const response = new Response(JSON.stringify(status), {
       status: 200,
       headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
     });
+    
+    // Apply caching for status endpoint (5 minutes)
+    return cacheMiddleware(300)(response);
   } catch (error) {
     return new Response(
       JSON.stringify(createErrorResponse('Failed to get system status', 500, 'STATUS_ERROR')),
@@ -274,25 +381,14 @@ async function handleUserPreferences(request, env) {
     }
 
     if (request.method === 'POST') {
-      const body = await request.text();
+      // Use pre-validated body from main handler
+      const body = request._body || '';
       
-      // Validate JSON size
-      if (body.length > 1024 * 1024) { // 1MB limit
+      // Validate JSON format
+      const jsonValidation = validateInput.validateJSON(body);
+      if (!jsonValidation.valid) {
         return new Response(
-          JSON.stringify(createErrorResponse('Request too large', 413, 'PAYLOAD_TOO_LARGE')),
-          { 
-            status: 413, 
-            headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
-          }
-        );
-      }
-
-      let preferences;
-      try {
-        preferences = JSON.parse(body);
-      } catch (parseError) {
-        return new Response(
-          JSON.stringify(createErrorResponse('Invalid JSON', 400, 'INVALID_JSON')),
+          JSON.stringify(createErrorResponse(jsonValidation.error, 400, 'INVALID_JSON')),
           { 
             status: 400, 
             headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
@@ -300,7 +396,19 @@ async function handleUserPreferences(request, env) {
         );
       }
 
-      await env.KV.put(`preferences:${userId}`, JSON.stringify(preferences));
+      // Validate preferences schema
+      const schemaValidation = validateInput.validatePreferencesSchema(jsonValidation.data);
+      if (!schemaValidation.valid) {
+        return new Response(
+          JSON.stringify(createErrorResponse(schemaValidation.error, 400, 'INVALID_SCHEMA')),
+          { 
+            status: 400, 
+            headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      await env.KV.put(`preferences:${userId}`, JSON.stringify(schemaValidation.data));
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
