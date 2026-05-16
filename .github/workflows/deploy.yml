@@ -15,7 +15,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: deploy src/index.js --name mfm-corporation --compatibility-date 2024-05-16
+          command: deploy
 
   deploy-summary:
     name: Deployment Summary
