@@ -219,38 +219,40 @@ class CorporateChatSystem {
   }
 
   async getGMResponse(command, rawMessage, team) {
-    try {
-      // Try Cloudflare API first
-      const apiUrl = (window.CLOUDFLARE_CONFIG && window.CLOUDFLARE_CONFIG.apiUrl)
-        ? window.CLOUDFLARE_CONFIG.apiUrl
-        : 'https://mfm-corporation-api.mrhan-fx.workers.dev';
+    const apiUrl = (window.CLOUDFLARE_CONFIG && window.CLOUDFLARE_CONFIG.apiUrl)
+      ? window.CLOUDFLARE_CONFIG.apiUrl
+      : 'https://mfm-corporation-api.mrhan-fx.workers.dev';
 
-      const res = await fetch(`${apiUrl}/api/tools/search?query=${encodeURIComponent(rawMessage || command.type)}`, {
-        headers: { 'Content-Type': 'application/json' }
+    try {
+      const res = await fetch(`${apiUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: rawMessage || command.type })
       });
 
       if (res.ok) {
         const data = await res.json();
-        const teamNote = team ? ` I've assigned this to the <strong>${team}</strong>.` : '';
-        return {
-          message: `✅ Received, CEO Remy.${teamNote} Processing your request: "${rawMessage}". All 19 teams are coordinating. ${data.message || ''}`,
-          commandType: command.type
-        };
+        return { message: data.message, commandType: command.type, team: data.team };
       }
     } catch (e) { /* fall through to local response */ }
 
-    // Local fallback response
+    // Local fallback
     const teamNote = team ? ` Routing to <strong>${team}</strong>.` : '';
-    const responses = {
-      design: `🎨 Design Team activated.${teamNote} Working on your visual request now.`,
-      marketing: `📣 Marketing Team briefed.${teamNote} Campaign strategy being prepared.`,
-      development: `💻 Development Team on it.${teamNote} Engineering resources allocated.`,
-      security: `🔒 Security Team alerted.${teamNote} Audit initiated immediately.`,
-      default: `✅ Understood, CEO Remy.${teamNote} All relevant teams are coordinating on: "${rawMessage}"`
+    const fallbacks = {
+      'Design Team':          `🎨 Design Team activated.${teamNote} Visual request in progress.`,
+      'Marketing Team':       `📣 Marketing Team briefed.${teamNote} Campaign strategy underway.`,
+      'Development Team':     `💻 Development Team on it.${teamNote} Engineering resources allocated.`,
+      'Security Team':        `🔒 Security Team alerted.${teamNote} Audit initiated immediately.`,
+      'Finance Team':         `💰 Finance Team notified.${teamNote} Budget analysis in progress.`,
+      'Research Team':        `🔬 Research Team engaged.${teamNote} Data collection underway.`,
+      'Infrastructure Team':  `🌐 Infrastructure Team deployed.${teamNote} Systems being configured.`,
+      'Human Resources':      `👥 HR Team briefed.${teamNote} Processing your request.`,
+      'Operations Team':      `⚙️ Operations Team coordinating.${teamNote} All systems active.`
     };
-    const key = team ? team.toLowerCase().split(' ')[0] : 'default';
-    await this.simulateProcessing(800);
-    return { message: responses[key] || responses.default, commandType: command.type };
+    return {
+      message: fallbacks[team] || `✅ Understood, CEO Remy. ${teamNote} All 19 teams coordinating on: "${rawMessage}"`,
+      commandType: command.type
+    };
   }
 
   async generatePersonalizedResponse(command, aiInsights = null) {

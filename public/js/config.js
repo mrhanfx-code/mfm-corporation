@@ -4,13 +4,14 @@
 // Cloudflare API Configuration
 const CLOUDFLARE_CONFIG = {
     apiUrl: 'https://mfm-corporation-api.mrhan-fx.workers.dev',
-    pagesUrl: 'https://mfm-corporation.pages.dev',
+    pagesUrl: 'https://mfm-corporation-git.pages.dev',
     endpoints: {
         status: '/api/status',
         userPreferences: '/api/user/preferences',
         toolsSearch: '/api/tools/search',
         analytics: '/api/analytics',
-        upload: '/api/upload'
+        upload: '/api/upload',
+        chat: '/api/chat'
     }
 };
 

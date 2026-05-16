@@ -166,7 +166,7 @@ const logRequest = (method, path, status, clientIP, userAgent) => {
     status,
     clientIP,
     userAgent,
-    environment: ENVIRONMENT || 'unknown'
+    environment: 'production'
   }));
 };
 
@@ -272,6 +272,9 @@ export default {
         case '/api/upload':
           response = await handleFileUpload(request, env);
           break;
+        case '/api/chat':
+          response = await handleChat(request, env);
+          break;
         default:
           response = new Response(
             JSON.stringify(createErrorResponse('Endpoint not found', 404, 'NOT_FOUND')),
@@ -332,7 +335,7 @@ async function handleStatus(request, env) {
       platform: 'Cloudflare Pages',
       environment: env.ENVIRONMENT || 'development',
       features,
-      uptime: process.uptime ? process.uptime() : 0,
+      uptime: 0,
       timestamp: new Date().toISOString()
     };
 
@@ -440,7 +443,7 @@ async function handleToolsSearch(request, env) {
   
   try {
     const url = new URL(request.url);
-    const query = url.searchParams.get('q') || '';
+    const query = url.searchParams.get('q') || url.searchParams.get('query') || '';
     const category = url.searchParams.get('category') || '';
 
     // Validate input
@@ -475,7 +478,11 @@ async function handleToolsSearch(request, env) {
       (!category || tool.category === category)
     );
 
-    return new Response(JSON.stringify({ results }), {
+    const message = results.length > 0
+      ? `Found ${results.length} result(s) for "${query || 'all'}".`
+      : `No results found for "${query}". Try a different search term.`;
+
+    return new Response(JSON.stringify({ results, message }), {
       status: 200,
       headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
     });
@@ -608,6 +615,79 @@ async function handleFileUpload(request, env) {
         status: 500, 
         headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
       }
+    );
+  }
+}
+
+async function handleChat(request, env) {
+  const origin = request.headers.get('Origin') || '';
+
+  const TEAM_ROUTES = {
+    design:         { team: 'Design Team',          emoji: '🎨', keywords: ['design','ui','ux','visual','backdrop','logo','brand'] },
+    marketing:      { team: 'Marketing Team',        emoji: '📣', keywords: ['market','campaign','brand','advertis','social','content'] },
+    development:    { team: 'Development Team',      emoji: '💻', keywords: ['develop','code','bug','fix','feature','build','deploy','api'] },
+    security:       { team: 'Security Team',         emoji: '🔒', keywords: ['security','audit','threat','vulnerability','access','auth'] },
+    finance:        { team: 'Finance Team',          emoji: '💰', keywords: ['finance','budget','cost','revenue','expense','profit','invest'] },
+    research:       { team: 'Research Team',         emoji: '🔬', keywords: ['research','analyse','analysis','report','data','insight','study'] },
+    infrastructure: { team: 'Infrastructure Team',  emoji: '🌐', keywords: ['server','cloud','infra','deploy','hosting','cloudflare','network'] },
+    hr:             { team: 'Human Resources',       emoji: '👥', keywords: ['hire','staff','team','employee','talent','hr','recruit'] },
+    operations:     { team: 'Operations Team',       emoji: '⚙️',  keywords: [] }
+  };
+
+  try {
+    let message = '';
+
+    if (request.method === 'POST') {
+      const body = request._body || await request.text();
+      const json = JSON.parse(body);
+      message = (json.message || '').substring(0, 500);
+    } else {
+      const url = new URL(request.url);
+      message = (url.searchParams.get('message') || url.searchParams.get('q') || '').substring(0, 500);
+    }
+
+    if (!message) {
+      return new Response(
+        JSON.stringify(createErrorResponse('message is required', 400, 'MISSING_MESSAGE')),
+        { status: 400, headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const lower = message.toLowerCase();
+    let routed = TEAM_ROUTES.operations;
+    for (const [, route] of Object.entries(TEAM_ROUTES)) {
+      if (route.keywords.some(k => lower.includes(k))) { routed = route; break; }
+    }
+
+    // Store chat history in KV if available
+    if (env.KV) {
+      const historyKey = 'chat:history:ceo-remy';
+      const existing = await env.KV.get(historyKey);
+      const history = existing ? JSON.parse(existing) : [];
+      history.push({ role: 'ceo', message, timestamp: new Date().toISOString() });
+      history.push({ role: 'gm', team: routed.team, timestamp: new Date().toISOString() });
+      // Keep last 50 messages
+      if (history.length > 50) history.splice(0, history.length - 50);
+      await env.KV.put(historyKey, JSON.stringify(history), { expirationTtl: 86400 });
+    }
+
+    const gmResponse = {
+      message: `${routed.emoji} Understood, CEO Remy. Task received and routed to the **${routed.team}**. Your request is being processed with full priority. All coordination is underway.`,
+      team: routed.team,
+      emoji: routed.emoji,
+      timestamp: new Date().toISOString(),
+      status: 'dispatched'
+    };
+
+    return new Response(JSON.stringify(gmResponse), {
+      status: 200,
+      headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    return new Response(
+      JSON.stringify(createErrorResponse('Chat processing failed', 500, 'CHAT_ERROR')),
+      { status: 500, headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' } }
     );
   }
 }
