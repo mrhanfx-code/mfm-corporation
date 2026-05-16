@@ -1,14 +1,10 @@
-# Security headers for MFM Corporation - Production Ready
-# Applied to all responses
-
 /*
   X-Frame-Options: ALLOWALL
   X-Content-Type-Options: nosniff
-  X-XSS-Protection: "1; mode=block"
+  X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev; style-src 'self' 'unsafe-inline'; frame-src 'self' http://localhost:3000 https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev https://*.pages.dev https://*.workers.dev *; child-src 'self' https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev *
+  Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; frame-src *; child-src *
   Access-Control-Allow-Origin: *
   Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
   Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With
-*/
