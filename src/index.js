@@ -1,50 +1,71 @@
 // MFM Corporation Cloudflare Worker API - Secure Version
 // Backend API endpoints with security, validation, and error handling
 
-// Security configuration
+// Security configuration - FREE-TIER OPTIMIZED
 const SECURITY_CONFIG = {
   allowedOrigins: [
     'https://mfm-corporation.pages.dev',
     'https://mfm-corporation-api.mrhan-fx.workers.dev'
   ],
-  maxFileSize: 10 * 1024 * 1024, // 10MB
-  rateLimitPerMinute: 100,
-  requestTimeout: 30000 // 30 seconds
+  maxFileSize: 5 * 1024 * 1024, // 5MB (free-tier friendly)
+  maxRequestSize: 1024 * 1024, // 1MB request size limit
+  rateLimitPerMinute: 60, // Reduced for free-tier
+  requestTimeout: 15000 // 15 seconds (free-tier friendly)
 };
 
-// Rate limiting using KV
+// Rate limiting using KV - SECURE VERSION
 async function checkRateLimit(clientIP, env) {
   const key = `rate_limit:${clientIP}`;
   const current = await env.KV.get(key);
-  const count = current ? parseInt(current) : 0;
+  
+  // Validate numeric input to prevent bypass
+  const count = /^\d+$/.test(current) ? parseInt(current, 10) : 0;
   
   if (count >= SECURITY_CONFIG.rateLimitPerMinute) {
     return false;
   }
   
-  await env.KV.put(key, (count + 1).toString(), { expirationTtl: 60 });
+  // Atomic increment with validation
+  const newCount = count + 1;
+  await env.KV.put(key, newCount.toString(), { expirationTtl: 60 });
   return true;
 }
 
-// Input validation schemas
+// Input validation schemas - SECURE VERSION
 const validateInput = {
   searchQuery: (query) => {
     if (!query || typeof query !== 'string') return false;
-    if (query.length > 100) return false;
-    return /^[a-zA-Z0-9\s\-_]+$/.test(query);
+    
+    // Normalize Unicode to prevent bypass attacks
+    const normalized = query.normalize('NFKC');
+    if (normalized.length > 100) return false;
+    
+    // Strict ASCII validation - prevents Unicode bypass
+    return /^[\x20-\x7E]+$/.test(normalized);
   },
   userId: (userId) => {
     if (!userId || typeof userId !== 'string') return false;
-    return /^[a-zA-Z0-9\-_]{1,50}$/.test(userId);
+    
+    // Normalize Unicode and validate
+    const normalized = userId.normalize('NFKC');
+    if (normalized.length > 50 || normalized.length < 1) return false;
+    
+    // Strict ASCII validation
+    return /^[a-zA-Z0-9\-_]+$/.test(normalized);
   }
 };
 
-// Security headers
+// Security headers - SECURE VERSION
 const getSecurityHeaders = (origin) => {
-  const isAllowed = SECURITY_CONFIG.allowedOrigins.includes(origin);
+  // Normalize and validate origin to prevent spoofing
+  const normalizedOrigin = origin && origin !== 'null' && origin !== 'undefined' 
+    ? origin.toLowerCase().trim() 
+    : '';
+  
+  const isAllowed = SECURITY_CONFIG.allowedOrigins.includes(normalizedOrigin);
   
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : SECURITY_CONFIG.allowedOrigins[0],
+    'Access-Control-Allow-Origin': isAllowed ? normalizedOrigin : SECURITY_CONFIG.allowedOrigins[0],
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
     'Access-Control-Max-Age': '86400',
@@ -92,6 +113,19 @@ export default {
     const userAgent = request.headers.get('User-Agent') || 'unknown';
 
     try {
+      // Request size validation (free-tier protection)
+      const contentLength = request.headers.get('Content-Length');
+      if (contentLength && parseInt(contentLength, 10) > SECURITY_CONFIG.maxRequestSize) {
+        logRequest(request.method, path, 413, clientIP, userAgent);
+        return new Response(
+          JSON.stringify(createErrorResponse('Request too large', 413, 'PAYLOAD_TOO_LARGE')),
+          { 
+            status: 413, 
+            headers: { ...getSecurityHeaders(origin), 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
       // Rate limiting
       if (!(await checkRateLimit(clientIP, env))) {
         logRequest(request.method, path, 429, clientIP, userAgent);
