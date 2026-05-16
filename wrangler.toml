@@ -12,13 +12,13 @@ vars = { ENVIRONMENT = "development" }
 [[d1_databases]]
 binding = "DB"
 database_name = "mfm-corporation-db"
-database_id = "your-database-id-here"
+database_id = "91e8699c-2731-4f0d-8a09-9f9765e7e4cc"
 
 # KV namespace binding
 [[kv_namespaces]]
 binding = "KV"
-id = "your-kv-namespace-id-here"
-preview_id = "your-preview-kv-namespace-id-here"
+id = "b7fb55a0476d41b395fb36cf64b0a317"
+preview_id = "b7fb55a0476d41b395fb36cf64b0a317"
 
 # R2 bucket binding
 [[r2_buckets]]
