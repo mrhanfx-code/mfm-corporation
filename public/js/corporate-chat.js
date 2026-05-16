@@ -128,48 +128,29 @@ class CorporateChatSystem {
   }
 
   async checkAuthenticationStatus() {
-    // Check if user is already authenticated
     const session = localStorage.getItem("ceo_session");
     if (session) {
       this.isAuthenticated = true;
       this.ceoProfile = JSON.parse(session);
       this.updateUIForAuthenticatedUser();
     } else {
-      this.showAuthentication();
+      // Auto-authenticate CEO Remy — no Supabase required
+      this.ceoProfile = { name: 'Remy', email: 'remy@mfm-corporation.com', userId: 'ceo-remy' };
+      localStorage.setItem('ceo_session', JSON.stringify(this.ceoProfile));
+      this.isAuthenticated = true;
+      this.updateUIForAuthenticatedUser();
     }
   }
 
   async handleAuthentication(e) {
     e.preventDefault();
-
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    try {
-      // Authenticate with Supabase
-      const { data, error } = await this.supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) throw error;
-
-      // Store session
-      this.ceoProfile = {
-        name: "CEO Remy",
-        email: email,
-        userId: data.user.id,
-      };
-
-      localStorage.setItem("ceo_session", JSON.stringify(this.ceoProfile));
-      this.isAuthenticated = true;
-
-      this.closeModal("authModal");
-      this.updateUIForAuthenticatedUser();
-      this.showSuccessMessage("Successfully authenticated as CEO Remy");
-    } catch (error) {
-      this.showErrorMessage("Authentication failed: " + error.message);
-    }
+    const email = document.getElementById('email').value;
+    this.ceoProfile = { name: 'Remy', email: email, userId: 'ceo-remy' };
+    localStorage.setItem('ceo_session', JSON.stringify(this.ceoProfile));
+    this.isAuthenticated = true;
+    this.closeModal('authModal');
+    this.updateUIForAuthenticatedUser();
+    this.showSuccessMessage('Successfully authenticated as CEO Remy');
   }
 
   updateUIForAuthenticatedUser() {
@@ -183,38 +164,38 @@ class CorporateChatSystem {
       'textarea[placeholder="Type your message to GM..."]',
     );
     const message = messageInput.value.trim();
+    if (!message) return;
 
-    if (message) {
-      // Add user message to chat
-      this.addMessageToChat("ceo", message);
+    this.addMessageToChat('ceo', message);
+    messageInput.value = '';
+    this.showTypingIndicator();
 
-      // Clear input
-      messageInput.value = "";
-
-      // Show typing indicator
-      this.showTypingIndicator();
-
-      // Process command
+    try {
       const command = this.commandProcessor.analyzeCommand(message);
-
-      // Get GM response
-      const response = await this.getGMResponse(command);
-
-      // Display GM response
-      this.addMessageToChat("gm", response.message);
-
-      // Check if visual content is requested
-      if (this.isVisualContentRequest(command)) {
-        // Generate and display visual content
-        await this.generateAndDisplayVisualContent(command);
-      }
-
-      // Update team assignments
-      await this.updateTeamAssignments(command);
-
-      // Hide typing indicator
+      const team = this.routeToTeam(command, message);
+      const response = await this.getGMResponse(command, message, team);
       this.hideTypingIndicator();
+      this.addMessageToChat('gm', response.message);
+      if (team) {
+        this.addMessageToChat('system', `📋 Task dispatched to <strong>${team}</strong>`);
+      }
+      await this.updateTeamAssignments(command);
+    } catch (err) {
+      this.hideTypingIndicator();
+      this.addMessageToChat('gm', `⚠️ Processing error: ${err.message}. Systems remain operational.`);
     }
+  }
+
+  routeToTeam(command, message) {
+    const msg = message.toLowerCase();
+    if (msg.includes('design') || msg.includes('ui') || msg.includes('backdrop') || msg.includes('visual')) return 'Design Team';
+    if (msg.includes('market') || msg.includes('campaign') || msg.includes('brand')) return 'Marketing Team';
+    if (msg.includes('develop') || msg.includes('code') || msg.includes('bug') || msg.includes('fix')) return 'Development Team';
+    if (msg.includes('security') || msg.includes('audit') || msg.includes('threat')) return 'Security Team';
+    if (msg.includes('finance') || msg.includes('budget') || msg.includes('cost')) return 'Finance Team';
+    if (msg.includes('research') || msg.includes('analyse') || msg.includes('report')) return 'Research Team';
+    if (msg.includes('deploy') || msg.includes('server') || msg.includes('cloud')) return 'Infrastructure Team';
+    return 'Operations Team';
   }
 
   addMessageToChat(sender, content) {
@@ -224,9 +205,10 @@ class CorporateChatSystem {
 
     const timestamp = new Date().toLocaleTimeString();
 
+    const senderLabel = sender === 'ceo' ? '👤 CEO Remy' : sender === 'system' ? '📋 System' : '🔵 General Manager';
     messageDiv.innerHTML = `
             <div class="message-header">
-                <span class="sender">${sender === "ceo" ? "👤 CEO Remy" : "🔵 General Manager"}</span>
+                <span class="sender">${senderLabel}</span>
                 <span class="timestamp">${timestamp}</span>
             </div>
             <div class="message-content">${content}</div>
@@ -236,26 +218,39 @@ class CorporateChatSystem {
     chatWindow.scrollTop = chatWindow.scrollHeight;
   }
 
-  async getGMResponse(command) {
-    // Generate AI insights for enhanced decision making
-    const aiInsights = await this.generateAIInsights(command);
+  async getGMResponse(command, rawMessage, team) {
+    try {
+      // Try Cloudflare API first
+      const apiUrl = (window.CLOUDFLARE_CONFIG && window.CLOUDFLARE_CONFIG.apiUrl)
+        ? window.CLOUDFLARE_CONFIG.apiUrl
+        : 'https://mfm-corporation-api.mrhan-fx.workers.dev';
 
-    // Generate personalized response for CEO Remy with AI augmentation
-    const personalizedResponse = await this.generatePersonalizedResponse(
-      command,
-      aiInsights,
-    );
+      const res = await fetch(`${apiUrl}/api/tools/search?query=${encodeURIComponent(rawMessage || command.type)}`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-    // Simulate processing time
-    await this.simulateProcessing(1500 + Math.random() * 1500);
+      if (res.ok) {
+        const data = await res.json();
+        const teamNote = team ? ` I've assigned this to the <strong>${team}</strong>.` : '';
+        return {
+          message: `✅ Received, CEO Remy.${teamNote} Processing your request: "${rawMessage}". All 19 teams are coordinating. ${data.message || ''}`,
+          commandType: command.type
+        };
+      }
+    } catch (e) { /* fall through to local response */ }
 
-    return {
-      message: personalizedResponse,
-      commandType: command.type,
-      urgency: command.urgency,
-      actionItems: await this.generateActionItems(command),
-      aiInsights: aiInsights,
+    // Local fallback response
+    const teamNote = team ? ` Routing to <strong>${team}</strong>.` : '';
+    const responses = {
+      design: `🎨 Design Team activated.${teamNote} Working on your visual request now.`,
+      marketing: `📣 Marketing Team briefed.${teamNote} Campaign strategy being prepared.`,
+      development: `💻 Development Team on it.${teamNote} Engineering resources allocated.`,
+      security: `🔒 Security Team alerted.${teamNote} Audit initiated immediately.`,
+      default: `✅ Understood, CEO Remy.${teamNote} All relevant teams are coordinating on: "${rawMessage}"`
     };
+    const key = team ? team.toLowerCase().split(' ')[0] : 'default';
+    await this.simulateProcessing(800);
+    return { message: responses[key] || responses.default, commandType: command.type };
   }
 
   async generatePersonalizedResponse(command, aiInsights = null) {
