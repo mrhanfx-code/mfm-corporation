@@ -1,11 +1,17 @@
-// MFM Corporation - Supabase Configuration
+// MFM Corporation - Cloudflare Configuration
 // CEO Remy Command Center - Live Credentials
 
-// Supabase Configuration
-const SUPABASE_CONFIG = {
-    url: 'https://ptziszkaeueqyojixghn.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0emlzemthZXVlcXlvaml4Z2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODYyMzYsImV4cCI6MjA5NDE2MjIzNn0.CL0EVbis6UBw1BaGg61pyORId0RBi00H2rdykl7j1MQ',
-    serviceRoleKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0emlzemthZXVlcXlvaml4Z2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODYyMzYsImV4cCI6MjA5NDE2MjIzNn0.CL0EVbis6UBw1BaGg61pyORId0RBi00H2rdykl7j1MQ'
+// Cloudflare API Configuration
+const CLOUDFLARE_CONFIG = {
+    apiUrl: 'https://mfm-corporation-api.mrhan-fx.workers.dev',
+    pagesUrl: 'https://mfm-corporation.pages.dev',
+    endpoints: {
+        status: '/api/status',
+        userPreferences: '/api/user/preferences',
+        toolsSearch: '/api/tools/search',
+        analytics: '/api/analytics',
+        upload: '/api/upload'
+    }
 };
 
 // CEO Configuration
@@ -29,6 +35,6 @@ const CORPORATE_CONFIG = {
 };
 
 // Export configurations
-window.SUPABASE_CONFIG = SUPABASE_CONFIG;
+window.CLOUDFLARE_CONFIG = CLOUDFLARE_CONFIG;
 window.CEO_CONFIG = CEO_CONFIG;
 window.CORPORATE_CONFIG = CORPORATE_CONFIG;

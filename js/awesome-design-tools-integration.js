@@ -359,27 +359,39 @@ class AwesomeDesignToolsIntegration {
     }
 
     // Handle search
-    handleSearch(query) {
+    async handleSearch(query) {
         if (query.length < 2) {
             this.showAllTools();
             return;
         }
         
-        const results = this.searchTools(query);
+        const results = await this.searchTools(query);
         this.displaySearchResults(results, query);
     }
 
     // Perform search
-    performSearch(query) {
+    async performSearch(query) {
         if (!query.trim()) return;
         
         this.addToSearchHistory(query);
-        const results = this.searchTools(query);
+        const results = await this.searchTools(query);
         this.displaySearchResults(results, query);
     }
 
     // Search tools
-    searchTools(query) {
+    async searchTools(query) {
+        // First try Cloudflare API search
+        try {
+            const response = await fetch(`${window.CLOUDFLARE_CONFIG.apiUrl}${window.CLOUDFLARE_CONFIG.endpoints.toolsSearch}?q=${encodeURIComponent(query)}`);
+            if (response.ok) {
+                const apiResults = await response.json();
+                return apiResults.results || [];
+            }
+        } catch (error) {
+            console.log('API search failed, using local database:', error);
+        }
+        
+        // Fallback to local database search
         const results = [];
         const searchTerm = query.toLowerCase();
         

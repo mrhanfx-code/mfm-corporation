@@ -4,21 +4,40 @@
 // Wait for DOM to be ready before setting up status checks
 document.addEventListener('DOMContentLoaded', () => {
     // CEO Remy Status Check Function
-    window.checkAllAgentStatus = function() {
-        const status = window.corporateChat.checkAllAgentStatus();
+    window.checkAllAgentStatus = async function() {
+        // Check Cloudflare API status first
+        let apiStatus = null;
+        try {
+            const response = await fetch(`${window.CLOUDFLARE_CONFIG.apiUrl}${window.CLOUDFLARE_CONFIG.endpoints.status}`);
+            if (response.ok) {
+                apiStatus = await response.json();
+            }
+        } catch (error) {
+            console.log('API status check failed:', error);
+        }
+        
+        // Check local system status
+        const localStatus = window.corporateChat ? window.corporateChat.checkAllAgentStatus() : {
+            teams: 'unknown',
+            executives: 'unknown',
+            system: 'unknown',
+            database: 'unknown',
+            authentication: 'unknown'
+        };
         
         // Display status in console for debugging
         console.log('=== MFM CORPORATION STATUS CHECK ===');
         console.log('Timestamp:', new Date().toISOString());
-        console.log('Teams:', status.teams);
-        console.log('Executives:', status.executives);
-        console.log('System:', status.system);
-        console.log('Database:', status.database);
-        console.log('Authentication:', status.authentication);
+        console.log('Cloudflare API:', apiStatus);
+        console.log('Local System:', localStatus);
         console.log('=====================================');
         
-        // Return formatted status for user
-        return status;
+        // Return combined status
+        return {
+            cloudflare: apiStatus,
+            local: localStatus,
+            timestamp: new Date().toISOString()
+        };
     };
 
     // Auto-update status every 30 seconds
