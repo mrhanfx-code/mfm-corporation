@@ -1,17 +1,20 @@
 // MFM Corporation Cloudflare Worker API - Secure Version
 // Backend API endpoints with security, validation, and error handling
 
-// Security configuration - FREE-TIER OPTIMIZED
+// Security configuration - BROADCASTING READY
 const SECURITY_CONFIG = {
   allowedOrigins: [
     'https://mfm-corporation.pages.dev',
-    'https://mfm-corporation-api.mrhan-fx.workers.dev'
+    'https://mfm-corporation-api.mrhan-fx.workers.dev',
+    'http://localhost:3000',
+    'https://localhost:3000'
   ],
   maxFileSize: 5 * 1024 * 1024, // 5MB (free-tier friendly)
   maxRequestSize: 1024 * 1024, // 1MB request size limit
   rateLimitPerMinute: 60, // Reduced for free-tier
   requestTimeout: 15000, // 15 seconds (free-tier friendly)
-  allowedMethods: ['GET', 'POST', 'OPTIONS'] // HTTP method validation
+  allowedMethods: ['GET', 'POST', 'OPTIONS'], // HTTP method validation
+  allowFraming: true // Enable iframe embedding
 };
 
 // Rate limiting using KV - SECURE VERSION
@@ -79,7 +82,7 @@ const validateInput = {
   }
 };
 
-// Security headers - SECURE VERSION
+// Security headers - BROADCASTING READY
 const getSecurityHeaders = (origin) => {
   // Normalize and validate origin to prevent spoofing
   const normalizedOrigin = origin && origin !== 'null' && origin !== 'undefined' 
@@ -89,15 +92,17 @@ const getSecurityHeaders = (origin) => {
   const isAllowed = SECURITY_CONFIG.allowedOrigins.includes(normalizedOrigin);
   
   return {
-    'Access-Control-Allow-Origin': isAllowed ? normalizedOrigin : SECURITY_CONFIG.allowedOrigins[0],
+    'Access-Control-Allow-Origin': isAllowed ? normalizedOrigin : '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
     'Access-Control-Max-Age': '86400',
     'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
+    'X-Frame-Options': SECURITY_CONFIG.allowFraming ? 'SAMEORIGIN' : 'DENY',
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Content-Security-Policy': "default-src 'self'"
+    'Content-Security-Policy': SECURITY_CONFIG.allowFraming 
+      ? "default-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-src 'self' http://localhost:3000 https://*.pages.dev https://*.workers.dev"
+      : "default-src 'self'"
   };
 };
 
