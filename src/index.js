@@ -1,13 +1,14 @@
 // MFM Corporation Cloudflare Worker API - Secure Version
 // Backend API endpoints with security, validation, and error handling
 
-// Security configuration - BROADCASTING READY
+// Security configuration - PRODUCTION READY
 const SECURITY_CONFIG = {
   allowedOrigins: [
     'https://mfm-corporation.pages.dev',
     'https://mfm-corporation-api.mrhan-fx.workers.dev',
     'http://localhost:3000',
-    'https://localhost:3000'
+    'https://localhost:3000',
+    '*'
   ],
   maxFileSize: 5 * 1024 * 1024, // 5MB (free-tier friendly)
   maxRequestSize: 1024 * 1024, // 1MB request size limit
@@ -82,27 +83,25 @@ const validateInput = {
   }
 };
 
-// Security headers - BROADCASTING READY
+// Security headers - PRODUCTION READY
 const getSecurityHeaders = (origin) => {
   // Normalize and validate origin to prevent spoofing
   const normalizedOrigin = origin && origin !== 'null' && origin !== 'undefined' 
     ? origin.toLowerCase().trim() 
     : '';
   
-  const isAllowed = SECURITY_CONFIG.allowedOrigins.includes(normalizedOrigin);
+  const isAllowed = SECURITY_CONFIG.allowedOrigins.includes(normalizedOrigin) || SECURITY_CONFIG.allowedOrigins.includes('*');
   
   return {
-    'Access-Control-Allow-Origin': isAllowed ? normalizedOrigin : '*',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
     'Access-Control-Max-Age': '86400',
     'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': SECURITY_CONFIG.allowFraming ? 'SAMEORIGIN' : 'DENY',
+    'X-Frame-Options': 'ALLOWALL',
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Content-Security-Policy': SECURITY_CONFIG.allowFraming 
-      ? "default-src 'self' 'unsafe-inline' 'unsafe-eval'; frame-src 'self' http://localhost:3000 https://*.pages.dev https://*.workers.dev"
-      : "default-src 'self'"
+    'Content-Security-Policy': "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev *; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev *; style-src 'self' 'unsafe-inline' *; frame-src 'self' http://localhost:3000 https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev https://*.pages.dev https://*.workers.dev *; child-src 'self' https://mfm-corporation.pages.dev https://mfm-corporation-api.mrhan-fx.workers.dev *"
   };
 };
 
