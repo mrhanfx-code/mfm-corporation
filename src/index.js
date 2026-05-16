@@ -50,9 +50,9 @@ async function handleStatus(request, env) {
     version: '2.0.0',
     platform: 'Cloudflare Pages',
     features: {
-      database: !!env.DB,
-      kv_storage: !!env.KV_BINDING,
-      r2_storage: !!env.BUCKET,
+      database: !!env.db,
+      kv_storage: !!env.KV,
+      r2_storage: !!env["mfm-corporation-uploads"],
       workers: true
     },
     timestamp: new Date().toISOString()
@@ -65,7 +65,7 @@ async function handleStatus(request, env) {
 
 // Handle user preferences
 async function handleUserPreferences(request, env) {
-  if (!env.KV_BINDING) {
+  if (!env.KV) {
     return new Response(JSON.stringify({ error: 'KV storage not available' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' }
@@ -76,7 +76,7 @@ async function handleUserPreferences(request, env) {
   const userId = url.searchParams.get('userId') || 'default';
 
   if (request.method === 'GET') {
-    const preferences = await env.KV_BINDING.get(`preferences:${userId}`);
+    const preferences = await env.KV.get(`preferences:${userId}`);
     return new Response(preferences || '{}', {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -84,7 +84,7 @@ async function handleUserPreferences(request, env) {
 
   if (request.method === 'POST') {
     const preferences = await request.json();
-    await env.KV_BINDING.put(`preferences:${userId}`, JSON.stringify(preferences));
+    await env.KV.put(`preferences:${userId}`, JSON.stringify(preferences));
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -125,7 +125,7 @@ async function handleToolsSearch(request, env) {
 
 // Handle analytics
 async function handleAnalytics(request, env) {
-  if (!env.DB) {
+  if (!env.db) {
     return new Response(JSON.stringify({ error: 'Database not available' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' }
@@ -148,7 +148,7 @@ async function handleAnalytics(request, env) {
 
 // Handle file uploads
 async function handleFileUpload(request, env) {
-  if (!env.BUCKET) {
+  if (!env["mfm-corporation-uploads"]) {
     return new Response(JSON.stringify({ error: 'R2 storage not available' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json' }
@@ -173,12 +173,12 @@ async function handleFileUpload(request, env) {
   }
 
   const fileName = `uploads/${Date.now()}-${file.name}`;
-  await env.BUCKET.put(fileName, file);
+  await env["mfm-corporation-uploads"].put(fileName, file);
 
   return new Response(JSON.stringify({ 
     success: true, 
     fileName: fileName,
-    url: `https://pub-${env.BUCKET.bucketName}.r2.dev/${fileName}`
+    url: `https://pub-mfm-corporation-uploads.r2.dev/${fileName}`
   }), {
     headers: { 'Content-Type': 'application/json' }
   });
