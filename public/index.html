@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MFM Corporation - CEO Remy Command Center</title>
+    <meta
+      name="description"
+      content="AI-powered corporate automation with 19 specialized teams"
+    />
+    <link rel="stylesheet" href="css/corporate-style.css" />
+    <link rel="icon" href="assets/favicon.ico" />
+  </head>
+  <body>
+    <div class="ceo-dashboard">
+      <header class="dashboard-header">
+        <div class="corporation-info">
+          <h1>� MFM Corporation</h1>
+          <div class="ceo-profile">
+            <span class="ceo-name">CEO Remy</span>
+            <span class="status-indicator">🟢 Online</span>
+          </div>
+        </div>
+        <div class="security-status">
+          <button id="auth-status" class="security-btn">🔒 Secured</button>
+          <button id="settings-btn" class="settings-btn">⚙️ Settings</button>
+        </div>
+      </header>
+
+      <main class="dashboard-main">
+        <div class="chat-container">
+          <div class="chat-header">
+            <h2>🎯 CEO Command Center</h2>
+            <div class="chat-info">
+              <span class="connection-status">🔵 Connected to GM</span>
+              <span class="response-time">Avg response: 2.3s</span>
+            </div>
+          </div>
+
+          <div class="chat-messages" id="chatWindow">
+            <!-- Welcome Message -->
+            <div class="message gm-message">
+              <div class="message-header">
+                <span class="sender">🔵 General Manager</span>
+                <span class="timestamp">Just now</span>
+              </div>
+              <div class="message-content">
+                Good morning CEO Remy! I'm your General Manager, ready to
+                coordinate all 19 teams and 5 C-Level executives. I can help you
+                with research, design, business planning, and issue resolution.
+                Just chat with me naturally like you're doing now!
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <div class="file-upload-zone">
+              <input type="file" id="fileInput" multiple accept="*/*" />
+              <label for="fileInput" class="file-upload-btn">
+                📎 Attach Files
+              </label>
+              <div id="fileList" class="file-list"></div>
+            </div>
+            <div class="message-input">
+              <textarea
+                id="ceoMessage"
+                placeholder="Type your message to GM..."
+                rows="3"
+              ></textarea>
+              <div class="input-actions">
+                <button id="voiceBtn" class="voice-btn">🎤 Voice</button>
+                <button id="sendBtn" class="send-btn">📤 Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="corporate-sidebar">
+          <div class="quick-status">
+            <h3>� Corporate Status</h3>
+            <div class="status-summary">
+              <div class="status-item">
+                <span class="label">Teams Active:</span>
+                <span class="value" id="teamsActive">19/19</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Tasks Today:</span>
+                <span class="value" id="tasksToday">47</span>
+              </div>
+              <div class="status-item">
+                <span class="label">Quality Score:</span>
+                <span class="value" id="qualityScore">94.2%</span>
+              </div>
+              <div class="status-item">
+                <span class="label">System Health:</span>
+                <span class="value" id="systemHealth">98.7%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="executive-status">
+            <h3>🏢 C-Level Executives</h3>
+            <div class="executive-list" id="executiveList">
+              <div class="executive-item">
+                <span class="executive-title">COO</span>
+                <span class="executive-status">🟢 Active</span>
+              </div>
+              <div class="executive-item">
+                <span class="executive-title">CTO</span>
+                <span class="executive-status">🟢 Active</span>
+              </div>
+              <div class="executive-item">
+                <span class="executive-title">CMO</span>
+                <span class="executive-status">🟡 Busy</span>
+              </div>
+              <div class="executive-item">
+                <span class="executive-title">CFO</span>
+                <span class="executive-status">🟢 Active</span>
+              </div>
+              <div class="executive-item">
+                <span class="executive-title">CINO</span>
+                <span class="executive-status">🟢 Active</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="team-performance">
+            <h3>� Team Performance</h3>
+            <div class="team-grid" id="teamGrid">
+              <div class="team-card">
+                <span class="team-name">Innovation</span>
+                <span class="team-status">🟢 Working</span>
+              </div>
+              <div class="team-card">
+                <span class="team-name">Development</span>
+                <span class="team-status">🟢 Working</span>
+              </div>
+              <div class="team-card">
+                <span class="team-name">Marketing</span>
+                <span class="team-status">🟡 Review</span>
+              </div>
+              <div class="team-card">
+                <span class="team-name">Security</span>
+                <span class="team-status">🟢 Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal">
+      <div class="modal-content">
+        <h2>🔐 CEO Authentication</h2>
+        <form id="authForm">
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input
+              type="email"
+              id="email"
+              placeholder="remy@mfm-corporation.com"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="auth-btn">🔓 Login as CEO</button>
+            <button type="button" class="cancel-btn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+      <div class="modal-content">
+        <h2>⚙️ Settings</h2>
+        <div class="settings-section">
+          <h3>Notifications</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" id="qualityAlerts" checked />
+            <span>Quality Alerts</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="taskCompletion" checked />
+            <span>Task Completion</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="securityAlerts" checked />
+            <span>Security Alerts</span>
+          </label>
+        </div>
+        <div class="settings-section">
+          <h3>Display</h3>
+          <label class="checkbox-label">
+            <input type="checkbox" id="showTimestamps" checked />
+            <span>Show Timestamps</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="compactMode" />
+            <span>Compact Mode</span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="save-btn">💾 Save Settings</button>
+          <button class="cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
+    <script src="js/corporate-chat.js?v=3"></script>
+    <script src="js/status-check.js"></script>
+    <script src="js/superpowers-integration.js"></script>
+    <script src="js/ui-ux-pro-max-integration.js"></script>
+    <script src="js/awesome-design-md-integration.js"></script>
+    <script src="js/design-resources-integration.js"></script>
+    <script src="js/org-chart-integration.js"></script>
+    <script src="js/awesome-design-tools-integration.js?v=2"></script>
+  </body>
+</html>
