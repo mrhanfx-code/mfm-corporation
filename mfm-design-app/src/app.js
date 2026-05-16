@@ -6,6 +6,8 @@ const DesignBrowser = require('./design-browser.js');
 const TypographySystem = require('./typography.js');
 const ProfessionalExport = require('./professional-export.js');
 const PerformanceOptimizer = require('./performance-optimizer.js');
+const KeyboardShortcuts = require('./keyboard-shortcuts.js');
+const { FunctionSystem } = require('./function-system.js');
 
 class DesignApp {
     constructor() {
@@ -29,6 +31,8 @@ class DesignApp {
         this.typography = new TypographySystem();
         this.professionalExport = new ProfessionalExport();
         this.performanceOptimizer = new PerformanceOptimizer();
+        this.keyboardShortcuts = new KeyboardShortcuts(this);
+        this.functionSystem = new FunctionSystem(this);
         
         this.init();
     }
