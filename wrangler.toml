@@ -1,23 +1,29 @@
-name = "mfm-corporation-api"
-main = "src/index.js"
+name = "mfm-corporation-telegram-bot"
+main = "src/telegram-bot.js"
 compatibility_date = "2024-05-16"
 
-[env.production]
-vars = { ENVIRONMENT = "production" }
+# Environment variables
+[env.production.vars]
+ENVIRONMENT = "production"
+TELEGRAM_BOT_TOKEN = "8789903271:AAHsfvQLYJnun3-WBMVCDgfcMjszEYY5uuU"
+AUTHORIZED_USER_IDS = "6847462500"
+WEBHOOK_SECRET = "d0799e2a55c32712c31972642b0c8507f9226e1cd866e76f6c2d85932150f131"
+SENDGRID_API_KEY = "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"
+CEO_EMAIL = "remy@mfm-corporation.com"
 
 # D1 Database binding
-[[d1_databases]]
+[[env.production.d1_databases]]
 binding = "db"
 database_name = "mfm-corporation-db"
 database_id = "91e8699c-2731-4f0d-8a09-9f9765e7e4cc"
 
 # KV namespace binding
-[[kv_namespaces]]
+[[env.production.kv_namespaces]]
 binding = "KV"
 id = "b7fb55a0476d41b395fb36cf64b0a317"
 preview_id = "b7fb55a0476d41b395fb36cf64b0a317"
 
 # R2 bucket binding
-[[r2_buckets]]
+[[env.production.r2_buckets]]
 binding = "mfm-corporation-uploads"
 bucket_name = "mfm-corporation-uploads"

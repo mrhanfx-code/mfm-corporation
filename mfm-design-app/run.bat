@@ -13,7 +13,8 @@ if %errorlevel% neq 0 (
 REM Check if dependencies are installed
 if not exist "node_modules" (
     echo Installing dependencies...
-    "C:\Program Files\nodejs\npm.cmd" install
+    set PATH=%PATH%;C:\Program Files\nodejs
+    npm install
     if %errorlevel% neq 0 (
         echo Error: Failed to install dependencies
         pause
@@ -23,6 +24,7 @@ if not exist "node_modules" (
 
 REM Start the application
 echo Starting application...
-"C:\Program Files\nodejs\npm.cmd" start
+set PATH=%PATH%;C:\Program Files\nodejs
+npm start
 
 pause

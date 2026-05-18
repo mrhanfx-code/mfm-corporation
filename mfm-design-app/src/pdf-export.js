@@ -5,7 +5,12 @@ class PDFExporter {
 
     async exportToPDF(objects, canvas, filePath) {
         try {
-            const PDFDocument = require('pdfkit');
+            let PDFDocument;
+            try {
+                PDFDocument = require('pdfkit');
+            } catch (e) {
+                throw new Error('PDF export requires the pdfkit package. Install it with: npm install pdfkit');
+            }
             const fs = require('fs');
             
             this.pdfDocument = new PDFDocument({

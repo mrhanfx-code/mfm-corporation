@@ -54,10 +54,10 @@ class KeyboardShortcuts {
         this.addShortcut('ctrl+alt+3', () => this.app.hideBoundingBoxes());
         this.addShortcut('ctrl+h', () => this.app.hideEdges());
         this.addShortcut('ctrl+shift+h', () => this.app.hideTemplate());
-        this.addShortcut('ctrl+r', () => this.app.showRulers());
-        this.addShortcut('ctrl+;', () => this.app.showGuides());
+        this.addShortcut('ctrl+r', () => this.app.toggleRulers());
+        this.addShortcut('ctrl+;', () => this.app.toggleGuides());
         this.addShortcut('ctrl+alt+;', () => this.app.lockGuides());
-        this.addShortcut('ctrl+5', () => this.app.showGrid());
+        this.addShortcut('ctrl+shift+5', () => this.app.toggleGrid());
         this.addShortcut('ctrl+alt+5', () => this.app.snapToGrid());
         this.addShortcut('ctrl+alt+g', () => this.app.snapToPoint());
         this.addShortcut('ctrl+shift+b', () => this.app.showBoundingBoxes());

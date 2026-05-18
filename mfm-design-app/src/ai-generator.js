@@ -1,69 +1,43 @@
-const tf = require('@tensorflow/tfjs-node');
-
 class AIGenerator {
     constructor() {
-        this.model = null;
-        this.isModelLoaded = false;
-        this.initializeModel();
+        this.isReady = true;
+        this.seed = Date.now();
     }
 
-    async initializeModel() {
-        try {
-            // Create a simple text-to-vector model
-            this.model = this.createSimpleModel();
-            this.isModelLoaded = true;
-            console.log('AI model initialized successfully');
-        } catch (error) {
-            console.error('Failed to initialize AI model:', error);
-        }
-    }
-
-    createSimpleModel() {
-        // Simple neural network for text-to-vector generation
-        const model = tf.sequential({
-            layers: [
-                tf.layers.dense({ inputShape: [100], units: 128, activation: 'relu' }),
-                tf.layers.dropout({ rate: 0.2 }),
-                tf.layers.dense({ units: 64, activation: 'relu' }),
-                tf.layers.dropout({ rate: 0.2 }),
-                tf.layers.dense({ units: 32, activation: 'relu' }),
-                tf.layers.dense({ units: 16, activation: 'sigmoid' }) // Output: shape parameters
-            ]
-        });
-
-        model.compile({
-            optimizer: 'adam',
-            loss: 'meanSquaredError'
-        });
-
-        return model;
+    // Seeded pseudo-random for reproducible designs
+    _random() {
+        this.seed = (this.seed * 16807 + 0) % 2147483647;
+        return (this.seed - 1) / 2147483646;
     }
 
     async generateDesignFromText(prompt) {
-        if (!this.isModelLoaded) {
-            throw new Error('AI model not loaded');
-        }
-
         try {
             // Convert text prompt to numerical representation
             const textVector = this.textToVector(prompt);
-            
-            // Generate design parameters
-            const input = tf.tensor2d([textVector]);
-            const prediction = this.model.predict(input);
-            const output = await prediction.data();
-            
+
+            // Use lightweight heuristic generator instead of TF.js
+            const output = this._generateVector(textVector);
+
             // Convert output to design objects
             const design = this.vectorToDesign(output, prompt);
-            
-            // Clean up tensors
-            input.dispose();
-            prediction.dispose();
-            
+
             return design;
         } catch (error) {
             throw new Error(`Design generation failed: ${error.message}`);
         }
+    }
+
+    // Lightweight vector generator (replaces TF.js model)
+    _generateVector(input) {
+        const output = new Float32Array(16);
+        for (let i = 0; i < 16; i++) {
+            let sum = 0;
+            for (let j = 0; j < input.length; j++) {
+                sum += input[j] * Math.sin(i * j + 1);
+            }
+            output[i] = 1 / (1 + Math.exp(-sum)); // sigmoid
+        }
+        return output;
     }
 
     textToVector(text) {

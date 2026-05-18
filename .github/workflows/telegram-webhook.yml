@@ -1,0 +1,59 @@
+name: Telegram Webhook Handler
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  repository_dispatch:
+    types: [telegram-webhook]
+
+jobs:
+  handle-webhook:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Handle Telegram Webhook
+      if: github.event_name == 'repository_dispatch' && github.event.action == 'telegram-webhook'
+      run: |
+        echo "Processing Telegram webhook"
+        echo "${{ github.event.client_payload }}" | jq .
+        
+        # Extract webhook data
+        UPDATE_DATA=$(echo '${{ github.event.client_payload }}' | jq -r '.update')
+        
+        # Process the update (simplified for GitHub Actions)
+        USER_ID=$(echo "$UPDATE_DATA" | jq -r '.message.from.id // empty')
+        CHAT_ID=$(echo "$UPDATE_DATA" | jq -r '.message.chat.id // empty')
+        MESSAGE_TEXT=$(echo "$UPDATE_DATA" | jq -r '.message.text // empty')
+        
+        echo "User ID: $USER_ID"
+        echo "Chat ID: $CHAT_ID"
+        echo "Message: $MESSAGE_TEXT"
+        
+        # Check authorization
+        if [ "$USER_ID" = "6847462500" ]; then
+          echo "User authorized"
+          
+          # Send response back to Telegram
+          RESPONSE="🤖 MFM Corporation Bot: Message received - '$MESSAGE_TEXT'"
+          
+          curl -X POST "https://api.telegram.org/bot8789903271:AAHsfvQLYJnun3-WBMVCDgfcMjszEYY5uuU/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "{\"chat_id\": $CHAT_ID, \"text\": \"$RESPONSE\"}"
+        else
+          echo "User not authorized"
+        fi
+        
+    - name: Setup webhook endpoint info
+      run: |
+        echo "Webhook URL: https://api.github.com/repos/mrhanfx-code/mfm-corporation/dispatches"
+        echo "Use this URL for Telegram webhook with GitHub Actions"
