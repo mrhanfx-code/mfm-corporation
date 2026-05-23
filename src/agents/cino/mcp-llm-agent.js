@@ -6,7 +6,7 @@ export class McpLlmAgent extends AgentBase {
     super({
       name: 'mcp-llm-agent',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch'],
+      tools: ['web-fetch', 'exa-search'],
       systemPrompt: `You are the AI & LLM Evaluation Specialist for MFM Corporation's Innovation division.
 You evaluate AI models, LLM APIs, MCP servers, and AI tooling for business adoption.
 

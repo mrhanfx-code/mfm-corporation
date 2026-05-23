@@ -4,11 +4,13 @@ import { callLLM } from './llm-client.js';
 import { saveMemory, getMemory, saveTask, completeTask, logDecision, updateMetrics, clearMemory as d1ClearMemory } from '../tools/d1-store.js';
 import { fetchWebContent } from '../tools/web-fetch.js';
 import { sendEmail } from '../tools/email-tool.js';
+import { searchExa } from '../tools/exa-tool.js';
 import { syncAgentEvent, syncAgentMetrics } from '../tools/supabase-bridge.js';
 
 const TOOL_DESCRIPTIONS = {
-  'web-fetch': 'Fetch live content from a URL. Usage: [TOOL:web-fetch|{"url":"https://example.com","maxChars":2000}]',
-  'send-email': 'Send an email. Usage: [TOOL:send-email|{"to":"email@domain.com","subject":"Subject line","body":"Email body text"}]'
+  'web-fetch':   'Fetch live content from a URL. Usage: [TOOL:web-fetch|{"url":"https://example.com","maxChars":2000}]',
+  'send-email':  'Send an email. Usage: [TOOL:send-email|{"to":"email@domain.com","subject":"Subject line","body":"Email body text"}]',
+  'exa-search':  'Neural web search for real-time information. Usage: [TOOL:exa-search|{"query":"your search query","numResults":5}]'
 };
 
 const TIMEOUT_MS = 25000;
@@ -129,6 +131,8 @@ export class AgentBase {
         return await fetchWebContent(args.url, args.maxChars);
       case 'send-email':
         return await sendEmail(args.to, args.subject, args.body, env);
+      case 'exa-search':
+        return await searchExa(args.query, env, { numResults: args.numResults || 5 });
       default:
         return `[Unknown tool: ${toolName}]`;
     }
