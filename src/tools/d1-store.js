@@ -99,3 +99,30 @@ export async function clearAllMemory(userId, env) {
     'DELETE FROM agent_memory WHERE user_id=?'
   ).bind(String(userId)).run();
 }
+
+export async function updateRoutingScore(agent, qualityScore, env) {
+  if (!env.db) return;
+  const date = new Date().toISOString().split('T')[0];
+  await env.db.prepare(`
+    INSERT INTO metrics (agent, date, tasks_completed, avg_quality_score, avg_response_ms)
+    VALUES (?, ?, 0, ?, 0)
+    ON CONFLICT(agent, date) DO UPDATE SET
+      avg_quality_score = (avg_quality_score + excluded.avg_quality_score) / 2
+  `).bind(agent, date, qualityScore).run();
+}
+
+export async function getTopPerformingAgents(limit = 5, env) {
+  if (!env.db) return [];
+  const result = await env.db.prepare(`
+    SELECT agent,
+           SUM(tasks_completed) AS total_tasks,
+           AVG(avg_quality_score) AS avg_score
+    FROM metrics
+    WHERE date >= date('now', '-7 days')
+    GROUP BY agent
+    HAVING total_tasks > 0
+    ORDER BY avg_score DESC
+    LIMIT ?
+  `).bind(limit).all();
+  return result.results || [];
+}

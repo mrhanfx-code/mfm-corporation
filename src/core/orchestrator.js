@@ -1,7 +1,7 @@
 // Orchestrator — classifies CEO intent, routes to correct department agent
 
 import { callLLM, parseJSON, MODELS } from './llm-client.js';
-import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory } from '../tools/d1-store.js';
+import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory, updateRoutingScore, getTopPerformingAgents } from '../tools/d1-store.js';
 import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js';
 import { reviewOutput } from './quality-reviewer.js';
 import { AgentBase } from './agent-base.js';
@@ -89,8 +89,13 @@ export async function routeMessage(message, userId, env) {
   }
 
   try {
+    const topAgents = await getTopPerformingAgents(5, env);
+    const perfHint = topAgents.length
+      ? `\n\nRECENT TOP PERFORMERS (last 7 days): ${topAgents.map(a => `${a.agent} (avg score: ${Number(a.avg_score).toFixed(0)}/100)`).join(', ')}. Prefer these agents for similar tasks when appropriate.`
+      : '';
+
     const routeResult = await callLLM(ORCHESTRATOR_MODEL, [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: SYSTEM_PROMPT + perfHint },
       { role: 'user', content: text }
     ], env, { maxTokens: 150, temperature: 0.2 });
 
@@ -110,6 +115,7 @@ export async function routeMessage(message, userId, env) {
     const rawResponse = await agent.run(text, userId, env);
 
     const review = await reviewOutput(routing.agent, routing.task_type, rawResponse, env);
+    updateRoutingScore(routing.agent, review.score, env).catch(() => {});
     const finalResponse = review.improved_response || rawResponse;
     const header = `*[${routing.agent.replace(/-/g, ' ').toUpperCase()}]* _(score: ${review.score}/100)_\n\n`;
 

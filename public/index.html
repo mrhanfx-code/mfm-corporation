@@ -79,6 +79,9 @@
       .decision-time { color: var(--muted); font-size: .72rem; white-space: nowrap; }
 
       .empty-state { text-align: center; padding: 2rem; color: var(--muted); font-size: .85rem; }
+      .sidebar-col { display: flex; flex-direction: column; gap: 1rem; }
+      .panel-body-flush { padding: 0; }
+      .panel-full-width { grid-column: 1 / -1; }
 
       @media (max-width: 768px) {
         .dashboard { grid-template-columns: 1fr; }
@@ -127,20 +130,20 @@
       </div>
 
       <!-- Right column -->
-      <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="sidebar-col">
         <div class="panel">
           <div class="panel-header">Routing Decisions</div>
-          <div class="panel-body" style="padding:0;" id="decisionsFeed">
-            <div class="empty-state" style="padding:2rem;">Loading…</div>
+          <div class="panel-body panel-body-flush" id="decisionsFeed">
+            <div class="empty-state">Loading…</div>
           </div>
         </div>
       </div>
 
       <!-- Metrics table — full width -->
-      <div class="panel" style="grid-column:1/-1;">
+      <div class="panel panel-full-width">
         <div class="panel-header">Agent Metrics</div>
-        <div class="panel-body" style="padding:0;" id="metricsTable">
-          <div class="empty-state" style="padding:2rem;">Loading…</div>
+        <div class="panel-body panel-body-flush" id="metricsTable">
+          <div class="empty-state">Loading…</div>
         </div>
       </div>
     </div>
