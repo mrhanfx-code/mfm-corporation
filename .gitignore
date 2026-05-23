@@ -1,0 +1,17 @@
+# Cloudflare Wrangler local dev state
+.wrangler/
+
+# Sensitive / secrets
+OPENROUTER.txt
+risk-wh.txt
+*.env
+.env
+.env.local
+.env.*
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

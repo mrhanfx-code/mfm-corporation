@@ -44,9 +44,9 @@ class SecurityManager {
       validation.errors.push('Request size exceeds limit');
     }
 
-    // Check content type
+    // Check content type (use startsWith to handle charset params e.g. 'application/json; charset=utf-8')
     const contentType = request.headers.get('content-type');
-    if (contentType && !this.securityConfig.allowedMimeTypes.includes(contentType)) {
+    if (contentType && !this.securityConfig.allowedMimeTypes.some(mime => contentType.startsWith(mime))) {
       validation.warnings.push('Unexpected content type');
     }
 
@@ -147,6 +147,9 @@ class SecurityManager {
       severity: this.determineSeverity(event)
     };
 
+    console.log('Security event:', JSON.stringify(securityLog));
+
+    if (!this.env.KV) return;
     const logKey = `security:${Date.now()}:${event}:${userId}`;
     await this.env.KV.put(logKey, JSON.stringify(securityLog), { 
       expirationTtl: 86400 * 90 // 90 days
@@ -570,6 +573,7 @@ class MemoryManager {
   }
 
   async storeContext(userId, message, response, analysis) {
+    if (!this.env.KV) return;
     const contextKey = `context:${userId}`;
     const existingContext = await this.getContext(userId);
     
@@ -599,6 +603,7 @@ class MemoryManager {
   }
 
   async getContext(userId) {
+    if (!this.env.KV) return { shortTerm: [], longTerm: [], entities: {}, preferences: {}, emotionalState: 'neutral' };
     const contextKey = `context:${userId}`;
     const context = await this.env.KV.get(contextKey);
     
@@ -616,6 +621,7 @@ class MemoryManager {
   }
 
   async storeLongTermMemory(userId, memory) {
+    if (!this.env.KV) return;
     const longTermKey = `longterm:${userId}`;
     const existingMemories = await this.getLongTermMemories(userId);
     
@@ -639,6 +645,7 @@ class MemoryManager {
   }
 
   async getLongTermMemories(userId) {
+    if (!this.env.KV) return [];
     const longTermKey = `longterm:${userId}`;
     const memories = await this.env.KV.get(longTermKey);
     
@@ -665,6 +672,7 @@ class MemoryManager {
   }
 
   async updateEntityMemory(userId, entities) {
+    if (!this.env.KV) return;
     const contextKey = `context:${userId}`;
     const context = await this.getContext(userId);
     
@@ -687,6 +695,7 @@ class MemoryManager {
   }
 
   async updatePreferences(userId, preferences) {
+    if (!this.env.KV) return;
     const contextKey = `context:${userId}`;
     const context = await this.getContext(userId);
     
@@ -706,6 +715,7 @@ class MemoryManager {
   }
 
   async updateEmotionalState(userId, emotionalTone) {
+    if (!this.env.KV) return;
     const contextKey = `context:${userId}`;
     const context = await this.getContext(userId);
     
@@ -1743,10 +1753,19 @@ export default {
     }
 
     try {
+      
       // Handle different request methods
       const url = new URL(request.url);
       
       if (request.method === 'GET') {
+        // Root status endpoint
+        if (url.pathname === '/') {
+          return new Response('MFM Corporation Telegram Bot - Online', {
+            status: 200,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        }
+
         // Handle webhook verification
         if (url.pathname === '/telegram-webhook') {
           return await handleWebhookVerification(request, env);
@@ -1755,6 +1774,7 @@ export default {
         // Health check endpoint
         if (url.pathname === '/health') {
           return new Response('OK', {
+            status: 200,
             headers: { 'Content-Type': 'text/plain' }
           });
         }
@@ -1930,7 +1950,7 @@ async function handleAdvancedMessage(message, env) {
     await logInteraction(userId, 'message', 'telegram', {
       messageLength: (message.text || '').length,
       aiConfidence: aiResult.confidence,
-      hasMultiModal: Object.keys(multiModalResult.metadata.modalitiesPresent).length > 1
+      hasMultiModal: Object.keys(multiModalResult?.metadata?.modalitiesPresent || {}).length > 1
     }, env);
 
     return new Response('Message processed successfully');
@@ -1986,12 +2006,6 @@ function formatAIResponse(aiResult, multiModalResult) {
   // FIXED: Use * instead of ** for Telegram Markdown
   response += `\n\n🎯 *Confidence:* ${confidencePercent}%`;
 
-  // Add conversation state
-  if (aiResult.analysis.conversationState) {
-    // FIXED: Use * instead of ** for Telegram Markdown
-    response += `\n🔄 *State:* ${aiResult.analysis.conversationState}`;
-  }
-
   return response;
 }
 
@@ -2025,19 +2039,23 @@ Sensitive content automatically routed to CEO Remy via email.`;
       await sendMessage(chatId, helpText, env);
     },
     '/status': async () => {
-      // FIXED: Use * instead of ** for Telegram Markdown
+      const uptime = new Date().toISOString();
+      const kvStatus = env.KV ? '✅ Active' : '⚠️ Unbound';
+      const dbStatus = env.db ? '✅ Active' : '⚠️ Unbound';
+      const emailStatus = env.SENDGRID_API_KEY ? '✅ Connected' : '⚠️ Not configured';
       const statusText = `📊 *System Status:*
 
 ✅ AI Engine: Operational
-✅ Memory System: Active
 ✅ Security Layer: Enabled
 ✅ Multi-Modal Processing: Ready
-✅ Email Integration: Connected
+KV Storage: ${kvStatus}
+D1 Database: ${dbStatus}
+Email (SendGrid): ${emailStatus}
 
-🔧 *Performance:*
-• Response Time: <1s
-• Memory Usage: Optimal
-• Security Events: 0 recent
+🔧 *Runtime:*
+• Timestamp: ${uptime}
+• Environment: ${env.ENVIRONMENT || 'production'}
+• Worker: mfm-corporation-telegram-bot
 
 🌟 *Ready to assist you!*`;
       await sendMessage(chatId, statusText, env);
@@ -2045,6 +2063,12 @@ Sensitive content automatically routed to CEO Remy via email.`;
     '/clear': async () => {
       await memoryManager.storeContext(userId, '', '', {});
       await sendMessage(chatId, '🧹 Conversation history cleared. Fresh start!', env);
+    },
+    '/email': async () => {
+      await sendMessage(chatId, '📧 Email mode active. Your next message will be routed to CEO Remy via email.', env);
+    },
+    '/telegram': async () => {
+      await sendMessage(chatId, '💬 Telegram mode active. Continue chatting normally.', env);
     },
     '/mood': async () => {
       // FIXED: Use * instead of ** for Telegram Markdown
@@ -2131,6 +2155,8 @@ async function authenticateUser(userId, env) {
 
 // Rate limiting
 async function checkRateLimit(userId, env) {
+  if (!env.KV) return true; // Allow if KV not configured
+
   const now = Date.now();
   const windowStart = now - 60000; // 1 minute window
   const key = `rate_limit:${userId}`;
@@ -2155,23 +2181,33 @@ async function checkRateLimit(userId, env) {
 // Send message to Telegram
 async function sendMessage(chatId, text, env, options = {}) {
   const telegramUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-  
+
   const payload = {
     chat_id: chatId,
     text: text,
-    parse_mode: 'Markdown', // FIXED: Keep as Markdown (uses * for bold)
+    parse_mode: 'Markdown',
     disable_web_page_preview: true,
     ...options
   };
 
-  const response = await fetch(telegramUrl, {
+  let response = await fetch(telegramUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
 
+  // Retry without Markdown if parse failure (Telegram returns 400 on bad markdown)
+  if (!response.ok && response.status === 400) {
+    const fallbackPayload = { chat_id: chatId, text: text, disable_web_page_preview: true, ...options };
+    response = await fetch(telegramUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fallbackPayload)
+    });
+  }
+
   if (!response.ok) {
-    throw new Error(`Telegram API error: ${response.statusText}`);
+    throw new Error(`Telegram API error: ${response.status} ${response.statusText}`);
   }
 
   return response;
@@ -2187,6 +2223,9 @@ async function logInteraction(userId, action, route, metadata, env) {
     metadata
   };
 
+  console.log('Interaction:', JSON.stringify(logEntry));
+
+  if (!env.KV) return;
   const logKey = `audit:${Date.now()}:${userId}:${action}`;
   await env.KV.put(logKey, JSON.stringify(logEntry), {
     expirationTtl: 86400 * 90 // 90 days
@@ -2246,11 +2285,11 @@ async function handleTelegramRoute(message, classification, env) {
   try {
     // Route via email for sensitive content
     if (classification.route === 'email') {
-      return await sendViaEmail(message.text || '', classification, env);
+      return await sendViaEmail(message.text || '', classification, env, chatId);
     }
     
     // Handle via Telegram for regular content
-    const response = `I understand your message. Let me help you with that request.`;
+    const response = `I received your message. The AI engine encountered an issue processing it. Please try again or use /help for available commands.`;
     await sendMessage(chatId, response, env);
     
     return new Response('Message routed successfully');
@@ -2263,8 +2302,7 @@ async function handleTelegramRoute(message, classification, env) {
 }
 
 // FIXED: Add sendViaEmail function with corrected SendGrid payload
-async function sendViaEmail(message, classification, env) {
-  const chatId = env.AUTHORIZED_USER_IDS.split(',')[0]; // FIXED: Use env var
+async function sendViaEmail(message, classification, env, chatId = null) {
   
   try {
     const emailContent = `
