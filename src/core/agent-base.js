@@ -5,12 +5,14 @@ import { saveMemory, getMemory, saveTask, completeTask, logDecision, updateMetri
 import { fetchWebContent } from '../tools/web-fetch.js';
 import { sendEmail } from '../tools/email-tool.js';
 import { searchExa } from '../tools/exa-tool.js';
+import { postSocial } from '../tools/social-media-tool.js';
 import { syncAgentEvent, syncAgentMetrics } from '../tools/supabase-bridge.js';
 
 const TOOL_DESCRIPTIONS = {
   'web-fetch':   'Fetch live content from a URL. Usage: [TOOL:web-fetch|{"url":"https://example.com","maxChars":2000}]',
   'send-email':  'Send an email. Usage: [TOOL:send-email|{"to":"email@domain.com","subject":"Subject line","body":"Email body text"}]',
-  'exa-search':  'Neural web search for real-time information. Usage: [TOOL:exa-search|{"query":"your search query","numResults":5}]'
+  'exa-search':  'Neural web search for real-time information. Usage: [TOOL:exa-search|{"query":"your search query","numResults":5}]',
+  'social-post': 'Post to social media. Usage: [TOOL:social-post|{"platform":"facebook|instagram|tiktok","text":"post text (facebook)","caption":"caption (instagram/tiktok)","imageUrl":"https://... (optional, instagram auto-selects if omitted)","videoUrl":"https://... (required for tiktok)"}]'
 };
 
 const TIMEOUT_MS = 25000;
@@ -133,6 +135,8 @@ export class AgentBase {
         return await sendEmail(args.to, args.subject, args.body, env);
       case 'exa-search':
         return await searchExa(args.query, env, { numResults: args.numResults || 5 });
+      case 'social-post':
+        return await postSocial(args.platform, args, env);
       default:
         return `[Unknown tool: ${toolName}]`;
     }

@@ -18,6 +18,7 @@ import { IntegrationAgent } from '../agents/cto/integration-agent.js';
 import { ContentWriter } from '../agents/cmo/content-writer.js';
 import { MarketAnalyst } from '../agents/cmo/market-analyst.js';
 import { CustomerSuccessAgent } from '../agents/cmo/customer-success-agent.js';
+import { SocialMediaAgent } from '../agents/cmo/social-media-agent.js';
 import { FinancePlanner } from '../agents/cfo/finance-planner.js';
 import { RiskAssessor } from '../agents/cfo/risk-assessor.js';
 import { ResearchAgent } from '../agents/cino/research-agent.js';
@@ -52,6 +53,7 @@ Routing rules:
 - cmo/content-writer: write emails, posts, announcements, reports, copy
 - cmo/market-analyst: market research, competitor analysis, industry news
 - cmo/customer-success-agent: client relations, customer feedback, retention, support
+- cmo/social-media-agent: post to Facebook, Instagram, TikTok; social media content, captions, hashtags, scheduling
 - cfo/finance-planner: budgets, forecasts, costs, revenue, financial planning
 - cfo/risk-assessor: risk analysis, mitigation, compliance, liability
 - cino/research-agent: deep research on any topic, synthesis, citations
@@ -63,7 +65,7 @@ Routing rules:
 
 const PARALLEL_ROUTES = {
   'product-launch':   ['market-analyst', 'finance-planner', 'ops-coordinator'],
-  'campaign':         ['content-writer', 'market-analyst', 'risk-assessor'],
+  'campaign':         ['content-writer', 'social-media-agent', 'market-analyst'],
   'quarterly-review': ['finance-planner', 'risk-assessor', 'process-optimizer'],
   'tech-build':       ['tech-advisor', 'security-auditor', 'integration-agent'],
 };
@@ -114,6 +116,7 @@ const AGENT_MAP = {
   'content-writer': ContentWriter,
   'market-analyst': MarketAnalyst,
   'customer-success-agent': CustomerSuccessAgent,
+  'social-media-agent': SocialMediaAgent,
   'finance-planner': FinancePlanner,
   'risk-assessor': RiskAssessor,
   'research-agent': ResearchAgent,
@@ -181,10 +184,10 @@ async function handleSlashCommand(text, userId, env) {
 
   switch (cmd) {
     case '/start':
-      return `🚀 *MFM Corporation AI — Online*\n\n18 agents active across 5 departments.\nType any instruction — I route it to the right specialist.\n\nType /help for all agents.`;
+      return `🚀 *MFM Corporation AI — Online*\n\n19 agents active across 5 departments.\nType any instruction — I route it to the right specialist.\n\nType /help for all agents.`;
 
     case '/help':
-      return `🏢 *MFM Corporation — 18 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear /query [question]`;
+      return `🏢 *MFM Corporation — 19 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear /query [question]`;
 
     case '/status':
       return await getStatusReport(env);
