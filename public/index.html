@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MFM Corporation — CEO Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       :root {
@@ -11,7 +14,7 @@
         --text: #f3f4f6; --muted: #6b7280; --accent: #6366f1;
         --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
       }
-      body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; }
+      body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
 
       /* Header */
       header { display: flex; align-items: center; justify-content: space-between;
@@ -83,6 +86,67 @@
       .panel-body-flush { padding: 0; }
       .panel-full-width { grid-column: 1 / -1; }
 
+      /* Stat card icons */
+      .stat-icon { width: 32px; height: 32px; border-radius: .5rem; display: flex; align-items: center;
+        justify-content: center; margin-bottom: .75rem; opacity: .9; }
+      .stat-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;
+        stroke-linecap: round; stroke-linejoin: round; }
+      .stat-icon.runs  { background: #1e1b4b; color: #818cf8; }
+      .stat-icon.agents { background: #052e16; color: #4ade80; }
+      .stat-icon.score { background: #1c1917; color: #fbbf24; }
+
+      /* Score bars in metrics */
+      .score-cell { display: flex; align-items: center; gap: .5rem; }
+      .score-bar-bg { width: 56px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+      .score-bar-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
+      tr.row-high td:first-child { border-left: 3px solid var(--green); }
+      tr.row-mid  td:first-child { border-left: 3px solid var(--amber); }
+      tr.row-low  td:first-child { border-left: 3px solid var(--red); }
+
+      /* Header extras */
+      .updated-ts { font-size: .72rem; color: var(--muted); }
+      .mic-header-btn { background: none; border: 1px solid var(--border); border-radius: 999px;
+        color: var(--muted); cursor: pointer; padding: .3rem .75rem; display: flex; align-items: center;
+        gap: .4rem; font-size: .82rem; transition: all .2s; }
+      .mic-header-btn:hover { border-color: var(--accent); color: var(--text); }
+      .mic-header-btn.recording { border-color: var(--red); color: var(--red); animation: pulse-mic 1s infinite; }
+      @keyframes pulse-mic { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+      .mic-header-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none;
+        stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+      /* Command panel */
+      .cmd-panel { position: fixed; bottom: 0; right: 1.5rem; width: 440px; max-width: calc(100vw - 2rem);
+        background: var(--surface); border: 1px solid var(--border); border-bottom: none;
+        border-radius: .75rem .75rem 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,.4);
+        transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1); z-index: 100; }
+      .cmd-panel.open { transform: translateY(0); }
+      .cmd-panel-header { display: flex; align-items: center; justify-content: space-between;
+        padding: .75rem 1rem; border-bottom: 1px solid var(--border); }
+      .cmd-panel-title { font-size: .82rem; font-weight: 600; color: var(--muted);
+        text-transform: uppercase; letter-spacing: .06em; }
+      .cmd-close-btn { background: none; border: none; color: var(--muted); cursor: pointer;
+        font-size: 1.1rem; line-height: 1; padding: .1rem .3rem; border-radius: .25rem; }
+      .cmd-close-btn:hover { color: var(--text); background: var(--border); }
+      .cmd-body { padding: .75rem 1rem 1rem; }
+      .cmd-status { font-size: .75rem; color: var(--accent); margin-bottom: .5rem; min-height: 1em; }
+      .cmd-input-row { display: flex; gap: .5rem; align-items: center; }
+      .cmd-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: .5rem;
+        color: var(--text); padding: .5rem .75rem; font-size: .85rem; font-family: inherit; outline: none; }
+      .cmd-input:focus { border-color: var(--accent); }
+      .cmd-icon-btn { background: var(--bg); border: 1px solid var(--border); border-radius: .5rem;
+        color: var(--muted); cursor: pointer; width: 34px; height: 34px; display: flex;
+        align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+      .cmd-icon-btn:hover { border-color: var(--accent); color: var(--text); }
+      .cmd-icon-btn.recording { border-color: var(--red); color: var(--red); animation: pulse-mic 1s infinite; }
+      .cmd-icon-btn.sending { border-color: var(--accent); color: var(--accent); }
+      .cmd-icon-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none;
+        stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .cmd-response { margin-top: .75rem; background: var(--bg); border: 1px solid var(--border);
+        border-radius: .5rem; padding: .75rem; font-size: .82rem; line-height: 1.6;
+        max-height: 260px; overflow-y: auto; white-space: pre-wrap; }
+      .cmd-response::-webkit-scrollbar { width: 4px; }
+      .cmd-response::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
       @media (max-width: 768px) {
         .dashboard { grid-template-columns: 1fr; }
         .stat-cards { grid-template-columns: 1fr 1fr; }
@@ -93,7 +157,11 @@
     <header>
       <div class="logo">MFM <span>Corporation</span></div>
       <div class="header-right">
-        <span>CEO Remy Command Center</span>
+        <span id="lastUpdated" class="updated-ts">Updated just now</span>
+        <button id="micHeaderBtn" class="mic-header-btn" title="Voice command (or click to open command panel)">
+          <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          Command
+        </button>
         <div class="realtime-pill">
           <div id="realtimeDot"></div>
           <span id="liveIndicator"><span id="realtimeStatus">Connecting…</span></span>
@@ -105,16 +173,25 @@
       <!-- Stat cards -->
       <div class="stat-cards">
         <div class="stat-card">
+          <div class="stat-icon runs">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
           <div class="stat-label">Total Agent Runs</div>
           <div class="stat-value" id="statRuns">—</div>
           <div class="stat-sub">across all 18 agents</div>
         </div>
         <div class="stat-card">
+          <div class="stat-icon agents">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
           <div class="stat-label">Active Agents</div>
           <div class="stat-value" id="statAgents">—</div>
           <div class="stat-sub">with recorded activity</div>
         </div>
         <div class="stat-card">
+          <div class="stat-icon score">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
           <div class="stat-label">Avg Quality Score</div>
           <div class="stat-value" id="statScore">—</div>
           <div class="stat-sub">across all agents</div>
@@ -145,6 +222,27 @@
         <div class="panel-body panel-body-flush" id="metricsTable">
           <div class="empty-state">Loading…</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Command panel -->
+    <div id="cmdPanel" class="cmd-panel">
+      <div class="cmd-panel-header">
+        <span class="cmd-panel-title">CEO Command</span>
+        <button id="cmdCloseBtn" class="cmd-close-btn" title="Close">✕</button>
+      </div>
+      <div class="cmd-body">
+        <div id="cmdStatus" class="cmd-status"></div>
+        <div class="cmd-input-row">
+          <input id="cmdInput" class="cmd-input" type="text" placeholder="Speak or type a command…" autocomplete="off" />
+          <button id="cmdMicBtn" class="cmd-icon-btn" title="Start voice input">
+            <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button id="cmdSendBtn" class="cmd-icon-btn" title="Send command">
+            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div id="cmdResponse" class="cmd-response" style="display:none"></div>
       </div>
     </div>
 

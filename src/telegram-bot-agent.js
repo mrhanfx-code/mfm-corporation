@@ -70,6 +70,37 @@ export default {
       return new Response('OK');
     }
 
+    const cors = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    };
+
+    if (url.pathname === '/ask') {
+      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+      if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: cors });
+      if (!env.DASHBOARD_SECRET) {
+        return new Response(JSON.stringify({ error: 'DASHBOARD_SECRET not configured. Run: wrangler secret put DASHBOARD_SECRET' }),
+          { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const token = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim();
+      if (token !== env.DASHBOARD_SECRET) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      let body;
+      try { body = await request.json(); } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      if (!body?.text?.trim()) {
+        return new Response(JSON.stringify({ error: 'Missing text' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const ceoId = (env.AUTHORIZED_USER_IDS || '').split(',')[0].trim();
+      const reply = await routeMessage({ text: body.text.trim() }, ceoId, env);
+      return new Response(JSON.stringify({ response: reply || 'No response.' }),
+        { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
     return new Response('Method Not Allowed', { status: 405 });
   },
 
