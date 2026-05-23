@@ -2,6 +2,7 @@
 
 import { callLLM, parseJSON, MODELS } from './llm-client.js';
 import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory } from '../tools/d1-store.js';
+import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js';
 import { reviewOutput } from './quality-reviewer.js';
 import { AgentBase } from './agent-base.js';
 
@@ -100,6 +101,7 @@ export async function routeMessage(message, userId, env) {
     }
 
     await logDecision('orchestrator', text, routing.reasoning, routing.agent, 0.9, env);
+    syncRoutingDecision({ agent: routing.agent, taskType: routing.task_type, reasoning: routing.reasoning, confidence: 0.9 }, env).catch(() => {});
 
     const AgentClass = AGENT_MAP[routing.agent];
     if (!AgentClass) return await handleDirect(text, userId, env);

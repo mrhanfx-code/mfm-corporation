@@ -4,6 +4,7 @@ import { callLLM } from './llm-client.js';
 import { saveMemory, getMemory, saveTask, completeTask, logDecision, updateMetrics, clearMemory as d1ClearMemory } from '../tools/d1-store.js';
 import { fetchWebContent } from '../tools/web-fetch.js';
 import { sendEmail } from '../tools/email-tool.js';
+import { syncAgentEvent, syncAgentMetrics } from '../tools/supabase-bridge.js';
 
 const TOOL_DESCRIPTIONS = {
   'web-fetch': 'Fetch live content from a URL. Usage: [TOOL:web-fetch|{"url":"https://example.com","maxChars":2000}]',
@@ -90,6 +91,24 @@ export class AgentBase {
       await updateMetrics(this.name, 1, 80, responseMs, env);
 
       if (taskId) await completeTask(taskId, result.content, 80, env);
+
+      syncAgentEvent({
+        agent: this.name,
+        task: userMessage,
+        response: result.content,
+        score: 80,
+        latencyMs: responseMs,
+        provider: result.provider,
+        model: result.model,
+        userId
+      }, env).catch(() => {});
+
+      syncAgentMetrics({
+        agent: this.name,
+        totalRuns: 1,
+        avgScore: 80,
+        avgLatency: responseMs
+      }, env).catch(() => {});
 
       return result.content;
 
