@@ -2,6 +2,7 @@
 
 import { callLLM, parseJSON, MODELS } from './llm-client.js';
 import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory, updateRoutingScore, getTopPerformingAgents } from '../tools/d1-store.js';
+import { nl2sqlQuery } from '../tools/nl2sql-tool.js';
 import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js';
 import { reviewOutput } from './quality-reviewer.js';
 import { AgentBase } from './agent-base.js';
@@ -60,6 +61,47 @@ Routing rules:
 - cino/mcp-llm-agent: AI model evaluation, LLM benchmarks, MCP tools, AI adoption
 - direct: greetings, slash commands (/start, /help, /status, /tasks, /metrics, /team, /memo, /clear)`;
 
+const PARALLEL_ROUTES = {
+  'product-launch':   ['market-analyst', 'finance-planner', 'ops-coordinator'],
+  'campaign':         ['content-writer', 'market-analyst', 'risk-assessor'],
+  'quarterly-review': ['finance-planner', 'risk-assessor', 'process-optimizer'],
+  'tech-build':       ['tech-advisor', 'security-auditor', 'integration-agent'],
+};
+
+const PARALLEL_KEYWORDS = {
+  'product-launch':   ['product launch', 'go to market', 'go-to-market', 'launch plan', 'launch strategy'],
+  'campaign':         ['marketing campaign', 'ad campaign', 'run a campaign', 'promotion campaign'],
+  'quarterly-review': ['quarterly review', 'q1 review', 'q2 review', 'q3 review', 'q4 review', 'annual review', 'full review'],
+  'tech-build':       ['architecture review', 'system design', 'tech stack review', 'full tech audit'],
+};
+
+function detectParallelIntent(text) {
+  const lower = text.toLowerCase();
+  for (const [key, phrases] of Object.entries(PARALLEL_KEYWORDS)) {
+    if (phrases.some(p => lower.includes(p))) return key;
+  }
+  return null;
+}
+
+async function runParallelAgents(agentNames, task, userId, env) {
+  const results = await Promise.allSettled(
+    agentNames.map(name => {
+      const AgentClass = AGENT_MAP[name];
+      if (!AgentClass) return Promise.resolve({ name, output: '[Agent not found]' });
+      const agent = new AgentClass();
+      return agent.run(task, userId, env).then(out => ({ name, output: out }));
+    })
+  );
+
+  const sections = results.map((r, i) => {
+    const label = agentNames[i].replace(/-/g, ' ').toUpperCase();
+    if (r.status === 'fulfilled') return `*[${label}]*\n\n${r.value.output}`;
+    return `*[${label}]*\n\n⚠️ ${r.reason?.message || 'Error'}`;
+  });
+
+  return `🔄 *PARALLEL BRIEFING — ${agentNames.length} specialists*\n\n` + sections.join('\n\n---\n\n');
+}
+
 const AGENT_MAP = {
   'ops-coordinator': OpsCoordinator,
   'quality-ops-reviewer': QualityOpsReviewer,
@@ -86,6 +128,11 @@ export async function routeMessage(message, userId, env) {
 
   if (text.startsWith('/')) {
     return await handleSlashCommand(text, userId, env);
+  }
+
+  const parallelKey = detectParallelIntent(text);
+  if (parallelKey) {
+    return await runParallelAgents(PARALLEL_ROUTES[parallelKey], text, userId, env);
   }
 
   try {
@@ -137,7 +184,7 @@ async function handleSlashCommand(text, userId, env) {
       return `🚀 *MFM Corporation AI — Online*\n\n18 agents active across 5 departments.\nType any instruction — I route it to the right specialist.\n\nType /help for all agents.`;
 
     case '/help':
-      return `🏢 *MFM Corporation — 18 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear`;
+      return `🏢 *MFM Corporation — 18 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear /query [question]`;
 
     case '/status':
       return await getStatusReport(env);
@@ -158,6 +205,10 @@ async function handleSlashCommand(text, userId, env) {
     case '/clear':
       await clearAllMemory(userId, env);
       return '🧹 All agent conversation memory cleared.';
+
+    case '/query':
+      if (!args) return '⚠️ Usage: /query [natural language question]\nExample: /query show me the top 5 agents by quality score this week';
+      return await nl2sqlQuery(args, env);
 
     default:
       return `❓ Unknown command: ${cmd}\nType /help for all commands.`;

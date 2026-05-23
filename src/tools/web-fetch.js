@@ -21,6 +21,10 @@ export async function fetchWebContent(url, maxChars = 3000) {
       catch { text = raw; }
     } else {
       text = extractContent(raw, url);
+      if (text.split('\n').length < 5) {
+        const jina = await fetchViaJina(url, maxChars);
+        if (jina) text = `[via Jina] ${jina}`;
+      }
     }
 
     return text.slice(0, maxChars);
@@ -90,4 +94,37 @@ function extractContent(html, url) {
   }
 
   return `[Source: ${url}]\n\n` + parts.join('\n\n');
+}
+
+async function fetchViaJina(url, maxChars = 3000) {
+  try {
+    const response = await fetch(`https://r.jina.ai/${url}`, {
+      headers: { 'Accept': 'text/plain', 'X-Return-Format': 'markdown' },
+      signal: AbortSignal.timeout(12000)
+    });
+    if (!response.ok) throw new Error(`Jina HTTP ${response.status}`);
+    const text = await response.text();
+    return text.slice(0, maxChars);
+  } catch (err) {
+    return null;
+  }
+}
+
+export async function extractLinks(url, max = 10) {
+  try {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MFM-Corporation-Bot/2.0)' },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!response.ok) return [];
+    const html = await response.text();
+    const base = new URL(url).origin;
+    const matches = [...html.matchAll(/href=["']([^"'#?][^"']*)["']/gi)];
+    const links = matches
+      .map(m => {
+        try { return new URL(m[1], base).href; } catch { return null; }
+      })
+      .filter(l => l && (l.startsWith('http://') || l.startsWith('https://')));
+    return [...new Set(links)].slice(0, max);
+  } catch { return []; }
 }

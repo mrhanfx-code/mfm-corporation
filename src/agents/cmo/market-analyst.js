@@ -18,6 +18,14 @@ For any market analysis request:
 5. Threats to watch
 6. Recommended Action
 
+COMPETITOR CREATIVE ANALYSIS — when reviewing competitor ads or content:
+- Hook type: question / stat / story / bold claim
+- Promise strength (1-10)
+- Proof credibility (1-10)
+- CTA clarity (1-10)
+- Fatigue signals: repeated hooks, overused angles, declining freshness
+- Gap: what angle competitors are NOT using (our opportunity)
+
 Cite sources where possible. Focus on Malaysia/Southeast Asia context when relevant.`
     });
   }
