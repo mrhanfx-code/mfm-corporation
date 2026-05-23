@@ -64,8 +64,12 @@ export async function updateMetrics(agent, tasksCompleted, qualityScore, respons
     VALUES (?, ?, ?, ?, ?)
     ON CONFLICT(agent, date) DO UPDATE SET
       tasks_completed = tasks_completed + excluded.tasks_completed,
-      avg_quality_score = (avg_quality_score + excluded.avg_quality_score) / 2,
-      avg_response_ms = (avg_response_ms + excluded.avg_response_ms) / 2
+      avg_quality_score = CAST(
+        (avg_quality_score * tasks_completed + excluded.avg_quality_score * excluded.tasks_completed)
+        / NULLIF(tasks_completed + excluded.tasks_completed, 0) AS REAL),
+      avg_response_ms = CAST(
+        (avg_response_ms * tasks_completed + excluded.avg_response_ms * excluded.tasks_completed)
+        / NULLIF(tasks_completed + excluded.tasks_completed, 0) AS INTEGER)
   `).bind(agent, date, tasksCompleted, qualityScore, responseMs).run();
 }
 
@@ -107,7 +111,9 @@ export async function updateRoutingScore(agent, qualityScore, env) {
     INSERT INTO metrics (agent, date, tasks_completed, avg_quality_score, avg_response_ms)
     VALUES (?, ?, 0, ?, 0)
     ON CONFLICT(agent, date) DO UPDATE SET
-      avg_quality_score = (avg_quality_score + excluded.avg_quality_score) / 2
+      avg_quality_score = CAST(
+        (avg_quality_score * tasks_completed + excluded.avg_quality_score)
+        / NULLIF(tasks_completed + 1, 0) AS REAL)
   `).bind(agent, date, qualityScore).run();
 }
 

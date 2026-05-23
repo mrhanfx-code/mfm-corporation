@@ -27,12 +27,24 @@ function buildToolInstructions(tools) {
 
 function parseToolCalls(text) {
   const calls = [];
-  const pattern = /\[TOOL:([a-z-]+)\|(\{[^}]+\})\]/g;
-  let match;
-  while ((match = pattern.exec(text)) !== null) {
-    try {
-      calls.push({ tool: match[1], args: JSON.parse(match[2]) });
-    } catch (_) {}
+  const prefix = '[TOOL:';
+  let i = 0;
+  while (i < text.length) {
+    const start = text.indexOf(prefix, i);
+    if (start === -1) break;
+    const pipeIdx = text.indexOf('|', start + prefix.length);
+    if (pipeIdx === -1) { i = start + 1; continue; }
+    const toolName = text.slice(start + prefix.length, pipeIdx).trim();
+    if (!/^[a-z-]+$/.test(toolName)) { i = start + 1; continue; }
+    let depth = 0, jsonStart = -1, jsonEnd = -1;
+    for (let j = pipeIdx + 1; j < text.length; j++) {
+      if (text[j] === '{') { if (depth === 0) jsonStart = j; depth++; }
+      else if (text[j] === '}') { depth--; if (depth === 0) { jsonEnd = j; break; } }
+    }
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      try { calls.push({ tool: toolName, args: JSON.parse(text.slice(jsonStart, jsonEnd + 1)) }); } catch (_) {}
+    }
+    i = start + 1;
   }
   return calls;
 }
@@ -96,27 +108,14 @@ export class AgentBase {
       await saveMemory(this.name, userId, 'assistant', result.content, env);
 
       const responseMs = Date.now() - start;
-      await updateMetrics(this.name, 1, 80, responseMs, env);
+      if (taskId) await completeTask(taskId, result.content, 0, env);
 
-      if (taskId) await completeTask(taskId, result.content, 80, env);
-
-      syncAgentEvent({
-        agent: this.name,
-        task: userMessage,
-        response: result.content,
-        score: 80,
-        latencyMs: responseMs,
-        provider: result.provider,
-        model: result.model,
-        userId
-      }, env).catch(() => {});
-
-      syncAgentMetrics({
-        agent: this.name,
-        totalRuns: 1,
-        avgScore: 80,
-        avgLatency: responseMs
-      }, env).catch(() => {});
+      // Store state for finalizeScore() — called by orchestrator with real review score
+      this._lastTaskId = taskId;
+      this._lastResponseMs = responseMs;
+      this._lastResult = result;
+      this._lastUserId = userId;
+      this._lastMessage = userMessage;
 
       return result.content;
 
@@ -159,6 +158,28 @@ Video: ${args.videoUrl || 'n/a'}]`;
       default:
         return `[Unknown tool: ${toolName}]`;
     }
+  }
+
+  async finalizeScore(score, env) {
+    if (!this._lastResult) return;
+    const responseMs = this._lastResponseMs || 0;
+    await updateMetrics(this.name, 1, score, responseMs, env);
+    syncAgentEvent({
+      agent: this.name,
+      task: this._lastMessage || '',
+      response: this._lastResult.content || '',
+      score,
+      latencyMs: responseMs,
+      provider: this._lastResult.provider,
+      model: this._lastResult.model,
+      userId: this._lastUserId
+    }, env).catch(() => {});
+    syncAgentMetrics({
+      agent: this.name,
+      totalRuns: 1,
+      avgScore: score,
+      avgLatency: responseMs
+    }, env).catch(() => {});
   }
 
   async clearMemory(userId, env) {

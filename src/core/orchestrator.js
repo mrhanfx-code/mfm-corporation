@@ -97,20 +97,28 @@ function detectParallelIntent(text) {
 }
 
 async function runParallelAgents(agentNames, task, userId, env) {
-  const results = await Promise.allSettled(
+  const contextCard = await buildContextCard('parallel-dispatch', env).catch(() => '');
+
+  const settled = await Promise.allSettled(
     agentNames.map(name => {
       const AgentClass = AGENT_MAP[name];
-      if (!AgentClass) return Promise.resolve({ name, output: '[Agent not found]' });
+      if (!AgentClass) return Promise.resolve({ name, output: '[Agent not found]', agent: null });
       const agent = new AgentClass();
-      return agent.run(task, userId, env).then(out => ({ name, output: out }));
+      return agent.run(task, userId, env, { contextCard }).then(out => ({ name, output: out, agent }));
     })
   );
 
-  const sections = results.map((r, i) => {
+  const sections = await Promise.all(settled.map(async (r, i) => {
     const label = agentNames[i].replace(/-/g, ' ').toUpperCase();
-    if (r.status === 'fulfilled') return `*[${label}]*\n\n${r.value.output}`;
+    if (r.status === 'fulfilled') {
+      const { output, agent } = r.value;
+      const review = await reviewOutput(agentNames[i], 'parallel', output, env).catch(() => ({ score: 75, improved_response: null }));
+      if (agent) agent.finalizeScore(review.score, env).catch(() => {});
+      updateRoutingScore(agentNames[i], review.score, env).catch(() => {});
+      return `*[${label}]* _(${review.score}/100)_\n\n${review.improved_response || output}`;
+    }
     return `*[${label}]*\n\n⚠️ ${r.reason?.message || 'Error'}`;
-  });
+  }));
 
   return `🔄 *PARALLEL BRIEFING — ${agentNames.length} specialists*\n\n` + sections.join('\n\n---\n\n');
 }
@@ -195,10 +203,12 @@ export async function routeMessage(message, userId, env) {
 
     const review = await reviewOutput(routing.agent, routing.task_type, rawResponse, env);
     updateRoutingScore(routing.agent, review.score, env).catch(() => {});
+    agent.finalizeScore(review.score, env).catch(() => {});
     const finalResponse = review.improved_response || rawResponse;
     const header = `*[${routing.agent.replace(/-/g, ' ').toUpperCase()}]* _(score: ${review.score}/100)_\n\n`;
-
-    return header + finalResponse;
+    const output = header + finalResponse;
+    syncCeoCommand({ command: text, userId, response: output }, env).catch(() => {});
+    return output;
 
   } catch (err) {
     console.error('[Orchestrator] error:', err.message);
