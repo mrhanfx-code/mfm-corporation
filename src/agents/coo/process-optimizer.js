@@ -5,7 +5,7 @@ export class ProcessOptimizer extends AgentBase {
   constructor() {
     super({
       name: 'process-optimizer',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['web-fetch'],
       systemPrompt: `You are the Process Optimization Specialist for MFM Corporation.
 Your job: identify inefficiencies, design better workflows, and recommend optimizations.

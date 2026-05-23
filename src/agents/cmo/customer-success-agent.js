@@ -5,7 +5,7 @@ export class CustomerSuccessAgent extends AgentBase {
   constructor() {
     super({
       name: 'customer-success-agent',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['send-email'],
       systemPrompt: `You are the Customer Success Manager for MFM Corporation, reporting to the CMO.
 Context: Malaysia-based corporate clients, B2B relationships, professional services industry.

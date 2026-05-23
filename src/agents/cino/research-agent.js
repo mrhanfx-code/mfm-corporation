@@ -5,7 +5,7 @@ export class ResearchAgent extends AgentBase {
   constructor() {
     super({
       name: 'research-agent',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['web-fetch'],
       systemPrompt: `You are the Research Officer for MFM Corporation.
 Your job: conduct thorough research on any topic and deliver synthesized, actionable intelligence.

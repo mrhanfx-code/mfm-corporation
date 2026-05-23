@@ -5,7 +5,7 @@ export class ContentWriter extends AgentBase {
   constructor() {
     super({
       name: 'content-writer',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['send-email'],
       systemPrompt: `You are the Content Writer for MFM Corporation.
 You write on behalf of CEO Remy. Brand voice: professional, authoritative, concise, forward-thinking.

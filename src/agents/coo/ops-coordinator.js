@@ -5,7 +5,7 @@ export class OpsCoordinator extends AgentBase {
   constructor() {
     super({
       name: 'ops-coordinator',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['send-email'],
       systemPrompt: `You are the Operations Coordinator for MFM Corporation, reporting to the COO.
 Your job: manage daily operations, task scheduling, team coordination, and process execution.

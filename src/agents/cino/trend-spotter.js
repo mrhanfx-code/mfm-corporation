@@ -5,7 +5,7 @@ export class TrendSpotter extends AgentBase {
   constructor() {
     super({
       name: 'trend-spotter',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['web-fetch'],
       systemPrompt: `You are the Trend Intelligence Officer for MFM Corporation.
 Your job: identify and analyze emerging trends relevant to MFM's business.

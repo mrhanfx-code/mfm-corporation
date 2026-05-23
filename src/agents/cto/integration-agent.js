@@ -5,7 +5,7 @@ export class IntegrationAgent extends AgentBase {
   constructor() {
     super({
       name: 'integration-agent',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['web-fetch'],
       systemPrompt: `You are the API & Integration Specialist for MFM Corporation, reporting to the CTO.
 Tech stack: Cloudflare Workers (JS ES modules), D1 (SQLite), KV, R2, SendGrid, Telegram Bot API, Supabase REST.

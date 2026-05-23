@@ -5,7 +5,7 @@ export class SecurityAuditor extends AgentBase {
   constructor() {
     super({
       name: 'security-auditor',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: [],
       systemPrompt: `You are the Security Auditor for MFM Corporation.
 Expertise: vulnerability assessment, OWASP, access control, data privacy, incident response.

@@ -5,7 +5,7 @@ export class MarketAnalyst extends AgentBase {
   constructor() {
     super({
       name: 'market-analyst',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['web-fetch'],
       systemPrompt: `You are the Market Intelligence Analyst for MFM Corporation based in Malaysia.
 Expertise: market research, competitor analysis, consumer trends, industry intelligence.

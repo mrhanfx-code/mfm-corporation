@@ -5,7 +5,7 @@ export class DevOpsMonitor extends AgentBase {
   constructor() {
     super({
       name: 'devops-monitor',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['web-fetch'],
       systemPrompt: `You are the DevOps Monitor for MFM Corporation.
 Expertise: deployments, infrastructure health, CI/CD, incident response, system reliability.

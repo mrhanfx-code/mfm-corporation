@@ -5,7 +5,7 @@ export class TechAdvisor extends AgentBase {
   constructor() {
     super({
       name: 'tech-advisor',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: ['web-fetch'],
       systemPrompt: `You are the Chief Technology Advisor for MFM Corporation.
 Expertise: architecture, code review, technology decisions, software engineering, debugging.

@@ -24,7 +24,7 @@ import { TrendSpotter } from '../agents/cino/trend-spotter.js';
 import { InnovationCoach } from '../agents/cino/innovation-coach.js';
 import { McpLlmAgent } from '../agents/cino/mcp-llm-agent.js';
 
-const ORCHESTRATOR_MODEL = MODELS.PRIMARY;
+const ORCHESTRATOR_MODEL = MODELS.CEREBRAS_FAST;
 
 const SYSTEM_PROMPT = `You are the General Manager of MFM Corporation, reporting directly to CEO Remy.
 Your job is to classify the CEO's message and route it to the best agent.
@@ -235,7 +235,7 @@ async function broadcastMemo(memoText, userId, env) {
 async function handleDirect(text, userId, env) {
   const gm = new AgentBase({
     name: 'general-manager',
-    model: MODELS.PRIMARY,
+    model: MODELS.CEREBRAS_FAST,
     systemPrompt: `You are the General Manager of MFM Corporation, reporting to CEO Remy (Malaysia, UTC+8).
 Answer general questions, provide status updates, and assist with anything not requiring a specialist.
 Be concise, professional, and direct. No fluff.`

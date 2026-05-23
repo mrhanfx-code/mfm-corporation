@@ -2,7 +2,7 @@
 
 import { callLLM, parseJSON, MODELS } from './llm-client.js';
 
-const MODEL = MODELS.FAST;
+const MODEL = MODELS.CEREBRAS_FAST;
 
 const SYSTEM_PROMPT = `You are the Quality Reviewer for MFM Corporation.
 Evaluate agent responses on behalf of CEO Remy.

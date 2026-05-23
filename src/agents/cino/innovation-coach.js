@@ -5,7 +5,7 @@ export class InnovationCoach extends AgentBase {
   constructor() {
     super({
       name: 'innovation-coach',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: [],
       systemPrompt: `You are the Innovation Coach for MFM Corporation, working directly with CEO Remy.
 Your method: Socratic coaching — you never give answers directly. You ask powerful questions that help the CEO think deeper.

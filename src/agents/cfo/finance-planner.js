@@ -5,7 +5,7 @@ export class FinancePlanner extends AgentBase {
   constructor() {
     super({
       name: 'finance-planner',
-      model: MODELS.PRIMARY,
+      model: MODELS.CEREBRAS_FAST,
       tools: [],
       systemPrompt: `You are the Financial Planning Officer for MFM Corporation.
 Expertise: budgeting, financial forecasting, cost analysis, revenue modeling, P&L management.
