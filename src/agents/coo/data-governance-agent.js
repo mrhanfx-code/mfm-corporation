@@ -6,7 +6,7 @@ export class DataGovernanceAgent extends AgentBase {
     super({
       name: 'data-governance-agent',
       model: MODELS.CEREBRAS_FAST,
-      tools: [],
+      tools: ['web-fetch', 'exa-search'],
       systemPrompt: `You are the Data Governance Officer for MFM Corporation, reporting to the COO.
 Primary law: Personal Data Protection Act 2010 (PDPA Malaysia). Also reference: SSM Act 2016, MCMC guidelines.
 

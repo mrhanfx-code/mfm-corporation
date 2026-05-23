@@ -27,6 +27,7 @@ import { IdeaGenerator } from '../agents/cino/idea-generator.js';
 import { TrendSpotter } from '../agents/cino/trend-spotter.js';
 import { InnovationCoach } from '../agents/cino/innovation-coach.js';
 import { McpLlmAgent } from '../agents/cino/mcp-llm-agent.js';
+import { LegalAdvisor } from '../agents/clo/legal-advisor.js';
 
 const ORCHESTRATOR_MODEL = MODELS.CEREBRAS_FAST;
 
@@ -35,8 +36,8 @@ Your job is to classify the CEO's message and route it to the best agent.
 
 Respond ONLY with valid JSON:
 {
-  "department": "coo|cto|cmo|cfo|cino|direct",
-  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|tech-advisor|devops-monitor|security-auditor|integration-agent|content-writer|market-analyst|customer-success-agent|finance-planner|risk-assessor|research-agent|idea-generator|trend-spotter|innovation-coach|mcp-llm-agent|direct",
+  "department": "coo|cto|cmo|cfo|cino|clo|direct",
+  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|tech-advisor|devops-monitor|security-auditor|integration-agent|content-writer|market-analyst|customer-success-agent|social-media-agent|finance-planner|risk-assessor|research-agent|idea-generator|trend-spotter|innovation-coach|mcp-llm-agent|legal-advisor|direct",
   "task_type": "brief task description",
   "urgency": "high|medium|low",
   "reasoning": "one sentence"
@@ -62,6 +63,7 @@ Routing rules:
 - cino/trend-spotter: trends, emerging tech, market signals, opportunities
 - cino/innovation-coach: refine ideas, Socratic questioning, strategy coaching
 - cino/mcp-llm-agent: AI model evaluation, LLM benchmarks, MCP tools, AI adoption
+- clo/legal-advisor: contracts, legal compliance, regulations, Malaysian law, IP, employment law, corporate governance, disputes, PDPA, SSM, Bank Negara, legal risk, NDA, terms of service
 - direct: greetings, slash commands (/start, /help, /status, /tasks, /metrics, /team, /memo, /clear)`;
 
 const PARALLEL_ROUTES = {
@@ -142,7 +144,8 @@ const AGENT_MAP = {
   'idea-generator': IdeaGenerator,
   'trend-spotter': TrendSpotter,
   'innovation-coach': InnovationCoach,
-  'mcp-llm-agent': McpLlmAgent
+  'mcp-llm-agent': McpLlmAgent,
+  'legal-advisor': LegalAdvisor
 };
 
 export async function routeMessage(message, userId, env) {
@@ -223,10 +226,10 @@ async function handleSlashCommand(text, userId, env) {
 
   switch (cmd) {
     case '/start':
-      return `🚀 *MFM Corporation AI — Online*\n\n19 agents active across 5 departments.\nType any instruction — I route it to the right specialist.\n\nType /help for all agents.`;
+      return `🚀 *MFM Corporation AI — Online*\n\n20 agents active across 6 departments.\nType any instruction — I route it to the right specialist.\n\nType /help for all agents.`;
 
     case '/help':
-      return `🏢 *MFM Corporation — 19 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear /query [question] /approve /reject`;
+      return `🏢 *MFM Corporation — 20 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n*CLO:* legal-advisor\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear /query [question] /approve /reject`;
 
     case '/status':
       return await getStatusReport(env);

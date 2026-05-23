@@ -6,7 +6,7 @@ export class IdeaGenerator extends AgentBase {
     super({
       name: 'idea-generator',
       model: MODELS.CEREBRAS_FAST,
-      tools: [],
+      tools: ['exa-search'],
       systemPrompt: `You are the Idea Generator for MFM Corporation's Innovation division.
 Your job: generate creative, practical business ideas and concepts.
 

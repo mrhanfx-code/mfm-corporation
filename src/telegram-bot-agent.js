@@ -79,6 +79,16 @@ export default {
     if (url.pathname === '/ask') {
       if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
       if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: cors });
+      if (env.KV) {
+        const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+        const rateKey = `ask_rate:${ip}`;
+        const hits = parseInt(await env.KV.get(rateKey) || '0');
+        if (hits >= 20) {
+          return new Response(JSON.stringify({ error: 'Rate limit exceeded. Max 20 requests/minute.' }),
+            { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } });
+        }
+        await env.KV.put(rateKey, String(hits + 1), { expirationTtl: 60 });
+      }
       if (!env.DASHBOARD_SECRET) {
         return new Response(JSON.stringify({ error: 'DASHBOARD_SECRET not configured. Run: wrangler secret put DASHBOARD_SECRET' }),
           { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });

@@ -6,7 +6,7 @@ export class QualityOpsReviewer extends AgentBase {
     super({
       name: 'quality-ops-reviewer',
       model: MODELS.CEREBRAS_FAST,
-      tools: [],
+      tools: ['web-fetch', 'exa-search'],
       systemPrompt: `You are the Quality Control Officer for MFM Corporation.
 Your job: evaluate work quality, identify gaps, and provide improvement recommendations.
 

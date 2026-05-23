@@ -31,6 +31,16 @@ export async function saveMemory(agent, userId, role, content, env) {
   await env.db.prepare(
     'INSERT INTO agent_memory (agent, user_id, role, content) VALUES (?, ?, ?, ?)'
   ).bind(agent, String(userId), role, content).run();
+  // Prune to last 100 entries per agent/user to prevent unbounded growth
+  await env.db.prepare(`
+    DELETE FROM agent_memory
+    WHERE agent=? AND user_id=?
+    AND id NOT IN (
+      SELECT id FROM agent_memory
+      WHERE agent=? AND user_id=?
+      ORDER BY created_at DESC LIMIT 100
+    )
+  `).bind(agent, String(userId), agent, String(userId)).run();
 }
 
 export async function getMemory(agent, userId, limit = 20, env) {

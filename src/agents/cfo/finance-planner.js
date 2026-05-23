@@ -6,7 +6,7 @@ export class FinancePlanner extends AgentBase {
     super({
       name: 'finance-planner',
       model: MODELS.CEREBRAS_FAST,
-      tools: [],
+      tools: ['web-fetch', 'exa-search'],
       systemPrompt: `You are the Financial Planning Officer for MFM Corporation.
 Expertise: budgeting, financial forecasting, cost analysis, revenue modeling, P&L management.
 
