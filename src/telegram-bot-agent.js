@@ -22,6 +22,41 @@ export default {
     if (request.method === 'GET') {
       if (url.pathname === '/') return new Response('MFM Corporation AI — Online', { status: 200 });
       if (url.pathname === '/health') return new Response('OK', { status: 200 });
+      if (url.pathname === '/supabase-check') {
+        const checks = {
+          SUPABASE_URL:         !!env.SUPABASE_URL,
+          SUPABASE_ANON_KEY:    !!env.SUPABASE_ANON_KEY,
+          SUPABASE_SERVICE_KEY: !!env.SUPABASE_SERVICE_KEY
+        };
+        const configured = Object.values(checks).every(Boolean);
+        let reachable = false;
+        let tablesOk = { agent_events: false, agent_metrics: false, ceo_commands: false, routing_decisions: false };
+        if (configured) {
+          try {
+            const results = await Promise.all(
+              Object.keys(tablesOk).map(table =>
+                fetch(`${env.SUPABASE_URL}/rest/v1/${table}?limit=1`, {
+                  headers: { 'apikey': env.SUPABASE_ANON_KEY, 'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}` }
+                }).then(r => ({ table, ok: r.ok, status: r.status }))
+              )
+            );
+            reachable = true;
+            for (const r of results) tablesOk[r.table] = r.ok;
+          } catch (e) {
+            reachable = false;
+          }
+        }
+        const status = configured && reachable && Object.values(tablesOk).every(Boolean);
+        return new Response(JSON.stringify({
+          ok: status,
+          secrets: checks,
+          reachable,
+          tables: tablesOk
+        }, null, 2), {
+          status: status ? 200 : 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       return new Response('Not Found', { status: 404 });
     }
 
