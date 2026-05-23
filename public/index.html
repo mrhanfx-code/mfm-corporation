@@ -3,229 +3,149 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MFM Corporation - CEO Remy Command Center</title>
-    <meta
-      name="description"
-      content="AI-powered corporate automation with 19 specialized teams"
-    />
-    <link rel="stylesheet" href="css/corporate-style.css" />
-    <link rel="icon" href="assets/favicon.ico" />
+    <title>MFM Corporation — CEO Command Center</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --bg: #0a0f1e; --surface: #111827; --border: #1f2937;
+        --text: #f3f4f6; --muted: #6b7280; --accent: #6366f1;
+        --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+      }
+      body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; }
+
+      /* Header */
+      header { display: flex; align-items: center; justify-content: space-between;
+        padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+        background: var(--surface); position: sticky; top: 0; z-index: 10; }
+      .logo { font-size: 1.2rem; font-weight: 700; letter-spacing: -.02em; }
+      .logo span { color: var(--accent); }
+      .header-right { display: flex; align-items: center; gap: 1rem; font-size: .85rem; color: var(--muted); }
+      .realtime-pill { display: flex; align-items: center; gap: .4rem;
+        background: #0d1526; border: 1px solid var(--border); border-radius: 999px; padding: .3rem .75rem; }
+      #realtimeDot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); transition: background .3s; }
+      #liveIndicator { transition: opacity .3s; }
+      #liveIndicator.pulse { opacity: 0; }
+
+      /* Layout */
+      .dashboard { display: grid; grid-template-columns: 1fr 320px; grid-template-rows: auto 1fr;
+        gap: 1rem; padding: 1rem 1.5rem; max-width: 1400px; margin: 0 auto; }
+
+      /* Stat cards */
+      .stat-cards { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+      .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem;
+        padding: 1.25rem 1.5rem; }
+      .stat-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; }
+      .stat-value { font-size: 2rem; font-weight: 700; }
+      .stat-sub { font-size: .8rem; color: var(--muted); margin-top: .25rem; }
+
+      /* Panels */
+      .panel { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; overflow: hidden; }
+      .panel-header { padding: .875rem 1.25rem; border-bottom: 1px solid var(--border);
+        font-size: .85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+      .panel-body { padding: .75rem; max-height: 520px; overflow-y: auto; }
+      .panel-body::-webkit-scrollbar { width: 4px; }
+      .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+      /* Event cards */
+      .event-card { background: var(--bg); border: 1px solid var(--border); border-radius: .5rem;
+        padding: .75rem 1rem; margin-bottom: .5rem; }
+      .event-header { display: flex; align-items: center; gap: .5rem; margin-bottom: .35rem; flex-wrap: wrap; }
+      .agent-name { font-weight: 600; font-size: .85rem; }
+      .event-time { margin-left: auto; font-size: .75rem; color: var(--muted); }
+      .event-task { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .35rem; }
+      .event-footer { display: flex; gap: .75rem; font-size: .75rem; }
+      .score-badge { font-weight: 600; }
+      .latency { color: var(--muted); }
+
+      /* Badges */
+      .badge { font-size: .65rem; padding: .15rem .5rem; border-radius: 999px; font-weight: 600; }
+      .badge.cerebras   { background: #312e81; color: #a5b4fc; }
+      .badge.openrouter { background: #1c1917; color: #a8a29e; }
+      .badge.unknown    { background: var(--border); color: var(--muted); }
+
+      /* Metrics table */
+      table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+      th { text-align: left; color: var(--muted); padding: .5rem .75rem; border-bottom: 1px solid var(--border); font-weight: 500; font-size: .75rem; }
+      td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); }
+      tr:last-child td { border-bottom: none; }
+      tr:hover td { background: #0d1526; }
+
+      /* Decision cards */
+      .decision-card { display: flex; align-items: center; gap: .75rem;
+        padding: .6rem .75rem; border-bottom: 1px solid var(--border); font-size: .82rem; }
+      .decision-card:last-child { border-bottom: none; }
+      .decision-agent { font-weight: 600; flex: 1; }
+      .decision-type { color: var(--muted); font-size: .75rem; flex: 1; }
+      .decision-time { color: var(--muted); font-size: .72rem; white-space: nowrap; }
+
+      .empty-state { text-align: center; padding: 2rem; color: var(--muted); font-size: .85rem; }
+
+      @media (max-width: 768px) {
+        .dashboard { grid-template-columns: 1fr; }
+        .stat-cards { grid-template-columns: 1fr 1fr; }
+      }
+    </style>
   </head>
   <body>
-    <div class="ceo-dashboard">
-      <header class="dashboard-header">
-        <div class="corporation-info">
-          <h1>� MFM Corporation</h1>
-          <div class="ceo-profile">
-            <span class="ceo-name">CEO Remy</span>
-            <span class="status-indicator">🟢 Online</span>
-          </div>
+    <header>
+      <div class="logo">MFM <span>Corporation</span></div>
+      <div class="header-right">
+        <span>CEO Remy Command Center</span>
+        <div class="realtime-pill">
+          <div id="realtimeDot"></div>
+          <span id="liveIndicator"><span id="realtimeStatus">Connecting…</span></span>
         </div>
-        <div class="security-status">
-          <button id="auth-status" class="security-btn">🔒 Secured</button>
-          <button id="settings-btn" class="settings-btn">⚙️ Settings</button>
-        </div>
-      </header>
-
-      <main class="dashboard-main">
-        <div class="chat-container">
-          <div class="chat-header">
-            <h2>🎯 CEO Command Center</h2>
-            <div class="chat-info">
-              <span class="connection-status">🔵 Connected to GM</span>
-              <span class="response-time">Avg response: 2.3s</span>
-            </div>
-          </div>
-
-          <div class="chat-messages" id="chatWindow">
-            <!-- Welcome Message -->
-            <div class="message gm-message">
-              <div class="message-header">
-                <span class="sender">🔵 General Manager</span>
-                <span class="timestamp">Just now</span>
-              </div>
-              <div class="message-content">
-                Good morning CEO Remy! I'm your General Manager, ready to
-                coordinate all 19 teams and 5 C-Level executives. I can help you
-                with research, design, business planning, and issue resolution.
-                Just chat with me naturally like you're doing now!
-              </div>
-            </div>
-          </div>
-
-          <div class="chat-input-area">
-            <div class="file-upload-zone">
-              <input type="file" id="fileInput" multiple accept="*/*" />
-              <label for="fileInput" class="file-upload-btn">
-                📎 Attach Files
-              </label>
-              <div id="fileList" class="file-list"></div>
-            </div>
-            <div class="message-input">
-              <textarea
-                id="ceoMessage"
-                placeholder="Type your message to GM..."
-                rows="3"
-              ></textarea>
-              <div class="input-actions">
-                <button id="voiceBtn" class="voice-btn">🎤 Voice</button>
-                <button id="sendBtn" class="send-btn">📤 Send</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="corporate-sidebar">
-          <div class="quick-status">
-            <h3>� Corporate Status</h3>
-            <div class="status-summary">
-              <div class="status-item">
-                <span class="label">Teams Active:</span>
-                <span class="value" id="teamsActive">19/19</span>
-              </div>
-              <div class="status-item">
-                <span class="label">Tasks Today:</span>
-                <span class="value" id="tasksToday">47</span>
-              </div>
-              <div class="status-item">
-                <span class="label">Quality Score:</span>
-                <span class="value" id="qualityScore">94.2%</span>
-              </div>
-              <div class="status-item">
-                <span class="label">System Health:</span>
-                <span class="value" id="systemHealth">98.7%</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="executive-status">
-            <h3>🏢 C-Level Executives</h3>
-            <div class="executive-list" id="executiveList">
-              <div class="executive-item">
-                <span class="executive-title">COO</span>
-                <span class="executive-status">🟢 Active</span>
-              </div>
-              <div class="executive-item">
-                <span class="executive-title">CTO</span>
-                <span class="executive-status">🟢 Active</span>
-              </div>
-              <div class="executive-item">
-                <span class="executive-title">CMO</span>
-                <span class="executive-status">🟡 Busy</span>
-              </div>
-              <div class="executive-item">
-                <span class="executive-title">CFO</span>
-                <span class="executive-status">🟢 Active</span>
-              </div>
-              <div class="executive-item">
-                <span class="executive-title">CINO</span>
-                <span class="executive-status">🟢 Active</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="team-performance">
-            <h3>� Team Performance</h3>
-            <div class="team-grid" id="teamGrid">
-              <div class="team-card">
-                <span class="team-name">Innovation</span>
-                <span class="team-status">🟢 Working</span>
-              </div>
-              <div class="team-card">
-                <span class="team-name">Development</span>
-                <span class="team-status">🟢 Working</span>
-              </div>
-              <div class="team-card">
-                <span class="team-name">Marketing</span>
-                <span class="team-status">🟡 Review</span>
-              </div>
-              <div class="team-card">
-                <span class="team-name">Security</span>
-                <span class="team-status">🟢 Active</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-
-    <!-- Authentication Modal -->
-    <div id="authModal" class="modal">
-      <div class="modal-content">
-        <h2>🔐 CEO Authentication</h2>
-        <form id="authForm">
-          <div class="form-group">
-            <label for="email">Email:</label>
-            <input
-              type="email"
-              id="email"
-              placeholder="remy@mfm-corporation.com"
-              required
-            />
-          </div>
-          <div class="form-group">
-            <label for="password">Password:</label>
-            <input
-              type="password"
-              id="password"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="auth-btn">🔓 Login as CEO</button>
-            <button type="button" class="cancel-btn">Cancel</button>
-          </div>
-        </form>
       </div>
-    </div>
+    </header>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
-      <div class="modal-content">
-        <h2>⚙️ Settings</h2>
-        <div class="settings-section">
-          <h3>Notifications</h3>
-          <label class="checkbox-label">
-            <input type="checkbox" id="qualityAlerts" checked />
-            <span>Quality Alerts</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="taskCompletion" checked />
-            <span>Task Completion</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="securityAlerts" checked />
-            <span>Security Alerts</span>
-          </label>
+    <div class="dashboard">
+      <!-- Stat cards -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="stat-label">Total Agent Runs</div>
+          <div class="stat-value" id="statRuns">—</div>
+          <div class="stat-sub">across all 18 agents</div>
         </div>
-        <div class="settings-section">
-          <h3>Display</h3>
-          <label class="checkbox-label">
-            <input type="checkbox" id="showTimestamps" checked />
-            <span>Show Timestamps</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="compactMode" />
-            <span>Compact Mode</span>
-          </label>
+        <div class="stat-card">
+          <div class="stat-label">Active Agents</div>
+          <div class="stat-value" id="statAgents">—</div>
+          <div class="stat-sub">with recorded activity</div>
         </div>
-        <div class="form-actions">
-          <button class="save-btn">💾 Save Settings</button>
-          <button class="cancel-btn">Cancel</button>
+        <div class="stat-card">
+          <div class="stat-label">Avg Quality Score</div>
+          <div class="stat-value" id="statScore">—</div>
+          <div class="stat-sub">across all agents</div>
+        </div>
+      </div>
+
+      <!-- Activity feed -->
+      <div class="panel">
+        <div class="panel-header">Live Agent Activity</div>
+        <div class="panel-body" id="activityFeed">
+          <div class="empty-state">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="panel">
+          <div class="panel-header">Routing Decisions</div>
+          <div class="panel-body" style="padding:0;" id="decisionsFeed">
+            <div class="empty-state" style="padding:2rem;">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics table — full width -->
+      <div class="panel" style="grid-column:1/-1;">
+        <div class="panel-header">Agent Metrics</div>
+        <div class="panel-body" style="padding:0;" id="metricsTable">
+          <div class="empty-state" style="padding:2rem;">Loading…</div>
         </div>
       </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js"></script>
-    <script src="js/corporate-chat.js?v=3"></script>
-    <script src="js/status-check.js"></script>
-    <script src="js/superpowers-integration.js"></script>
-    <script src="js/ui-ux-pro-max-integration.js"></script>
-    <script src="js/awesome-design-md-integration.js"></script>
-    <script src="js/design-resources-integration.js"></script>
-    <script src="js/org-chart-integration.js"></script>
-    <script src="js/awesome-design-tools-integration.js?v=2"></script>
+    <script src="js/dashboard.js"></script>
   </body>
 </html>
