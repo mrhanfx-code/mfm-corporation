@@ -48,13 +48,17 @@ export class AgentBase {
   async run(userMessage, userId, env, options = {}) {
     const start = Date.now();
     const taskId = await saveTask(this.name, userMessage, env);
+    this._draftMode = !!options.draftMode;
 
     try {
       const history = await getMemory(this.name, userId, 20, env);
       const toolInstructions = buildToolInstructions(this.tools);
+      const contextSection = options.contextCard
+        ? `\n\n--- BUSINESS CONTEXT ---\n${options.contextCard}\n------------------------`
+        : '';
 
       const baseMessages = [
-        { role: 'system', content: this.systemPrompt + toolInstructions },
+        { role: 'system', content: this.systemPrompt + toolInstructions + contextSection },
         ...history,
         { role: 'user', content: userMessage }
       ];
@@ -120,6 +124,8 @@ export class AgentBase {
       console.error(`[${this.name}] error:`, err.message);
       if (taskId) await completeTask(taskId, `ERROR: ${err.message}`, 0, env);
       throw err;
+    } finally {
+      this._draftMode = false;
     }
   }
 
@@ -132,10 +138,23 @@ export class AgentBase {
       case 'web-fetch':
         return await fetchWebContent(args.url, args.maxChars);
       case 'send-email':
+        if (this._draftMode) {
+          return `[DRAFT EMAIL]
+To: ${args.to}
+Subject: ${args.subject}
+
+${args.body}`;
+        }
         return await sendEmail(args.to, args.subject, args.body, env);
       case 'exa-search':
         return await searchExa(args.query, env, { numResults: args.numResults || 5 });
       case 'social-post':
+        if (this._draftMode) {
+          return `[DRAFT ${(args.platform || 'POST').toUpperCase()}
+Caption/Text: ${args.caption || args.text || ''}
+Image: ${args.imageUrl || 'auto-selected'}
+Video: ${args.videoUrl || 'n/a'}]`;
+        }
         return await postSocial(args.platform, args, env);
       default:
         return `[Unknown tool: ${toolName}]`;

@@ -6,6 +6,7 @@ import { nl2sqlQuery } from '../tools/nl2sql-tool.js';
 import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js';
 import { reviewOutput } from './quality-reviewer.js';
 import { AgentBase } from './agent-base.js';
+import { buildContextCard } from './context-card.js';
 
 import { OpsCoordinator } from '../agents/coo/ops-coordinator.js';
 import { QualityOpsReviewer } from '../agents/coo/quality-ops-reviewer.js';
@@ -76,6 +77,16 @@ const PARALLEL_KEYWORDS = {
   'quarterly-review': ['quarterly review', 'q1 review', 'q2 review', 'q3 review', 'q4 review', 'annual review', 'full review'],
   'tech-build':       ['architecture review', 'system design', 'tech stack review', 'full tech audit'],
 };
+
+// Agents that can take irreversible external actions
+const APPROVAL_AGENTS = new Set(['social-media-agent', 'customer-success-agent', 'ops-coordinator']);
+const APPROVAL_KEYWORDS = ['send email', 'email to', 'send to', 'post to', 'post on', 'publish', 'post facebook', 'post instagram', 'post tiktok', 'notify', 'let them know', 'announce to'];
+
+function requiresApproval(agentName, text) {
+  if (!APPROVAL_AGENTS.has(agentName)) return false;
+  const lower = text.toLowerCase();
+  return APPROVAL_KEYWORDS.some(k => lower.includes(k));
+}
 
 function detectParallelIntent(text) {
   const lower = text.toLowerCase();
@@ -161,8 +172,26 @@ export async function routeMessage(message, userId, env) {
     const AgentClass = AGENT_MAP[routing.agent];
     if (!AgentClass) return await handleDirect(text, userId, env);
 
+    // Build context card (Dossier pattern)
+    const contextCard = await buildContextCard(routing.agent, env);
+    const agentOptions = { contextCard };
+
+    // CEO approval gate (LangGraph human-in-the-loop pattern)
+    if (requiresApproval(routing.agent, text)) {
+      const agent = new AgentClass();
+      const draft = await agent.run(text, userId, env, { ...agentOptions, draftMode: true });
+
+      await env.KV.put(
+        `pending:${userId}`,
+        JSON.stringify({ text, agentName: routing.agent }),
+        { expirationTtl: 3600 }
+      );
+
+      return `📋 *[DRAFT — ${routing.agent.replace(/-/g, ' ').toUpperCase()}]*\n\n${draft}\n\n---\n✅ Reply */approve* to execute  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_`;
+    }
+
     const agent = new AgentClass();
-    const rawResponse = await agent.run(text, userId, env);
+    const rawResponse = await agent.run(text, userId, env, agentOptions);
 
     const review = await reviewOutput(routing.agent, routing.task_type, rawResponse, env);
     updateRoutingScore(routing.agent, review.score, env).catch(() => {});
@@ -187,7 +216,7 @@ async function handleSlashCommand(text, userId, env) {
       return `🚀 *MFM Corporation AI — Online*\n\n19 agents active across 5 departments.\nType any instruction — I route it to the right specialist.\n\nType /help for all agents.`;
 
     case '/help':
-      return `🏢 *MFM Corporation — 19 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear /query [question]`;
+      return `🏢 *MFM Corporation — 19 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear /query [question] /approve /reject`;
 
     case '/status':
       return await getStatusReport(env);
@@ -208,6 +237,30 @@ async function handleSlashCommand(text, userId, env) {
     case '/clear':
       await clearAllMemory(userId, env);
       return '🧹 All agent conversation memory cleared.';
+
+    case '/approve': {
+      if (!env.KV) return '⚠️ KV not configured.';
+      const raw = await env.KV.get(`pending:${userId}`);
+      if (!raw) return '⚠️ No pending action found. It may have expired (1h TTL).';
+      const { text: pendingText, agentName } = JSON.parse(raw);
+      await env.KV.delete(`pending:${userId}`);
+      const AgentClass = AGENT_MAP[agentName];
+      if (!AgentClass) return '⚠️ Agent not found for pending action.';
+      const contextCard = await buildContextCard(agentName, env);
+      const agentInst = new AgentClass();
+      const result = await agentInst.run(pendingText, userId, env, { contextCard });
+      const review = await reviewOutput(agentName, 'approved-action', result, env);
+      updateRoutingScore(agentName, review.score, env).catch(() => {});
+      return `✅ *Approved & Executed — [${agentName.replace(/-/g, ' ').toUpperCase()}]*\n\n${review.improved_response || result}`;
+    }
+
+    case '/reject': {
+      if (!env.KV) return '⚠️ KV not configured.';
+      const pending = await env.KV.get(`pending:${userId}`);
+      if (!pending) return '⚠️ No pending action to cancel.';
+      await env.KV.delete(`pending:${userId}`);
+      return '❌ Action cancelled and discarded.';
+    }
 
     case '/query':
       if (!args) return '⚠️ Usage: /query [natural language question]\nExample: /query show me the top 5 agents by quality score this week';
