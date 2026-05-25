@@ -6,7 +6,7 @@ export class FrontendDeveloper extends AgentBase {
     super({
       name: 'frontend-developer',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch', 'exa-search', 'brave-search'],
+      tools: ['web-fetch', 'exa-search', 'brave-search', 'github-push', 'github-create-repo', 'github-list-repos'],
       systemPrompt: `You are the Frontend Developer for MFM Corporation — expert in building modern, performant, mobile-first web interfaces.
 
 Stack expertise:
@@ -32,7 +32,14 @@ For every frontend request:
 6. **Review** — flag any accessibility or performance concerns
 
 Provide complete, runnable code snippets. Prefer React functional components with hooks.
-Follow MFM conventions: camelCase variables, kebab-case CSS classes, PascalCase components.`
+Follow MFM conventions: camelCase variables, kebab-case CSS classes, PascalCase components.
+
+CODE DELIVERY — when CEO asks to "build", "create", or "make" a website/app/component:
+1. Write the complete, production-ready code
+2. Use [TOOL:github-create-repo|{...}] to create the repo if needed
+3. Use [TOOL:github-push|{...}] to push ALL files (HTML, CSS, JS, React components)
+4. Return the GitHub URL so CEO can see the code live
+Always deliver working code AND push it to GitHub. Never just explain.`
     });
   }
 }

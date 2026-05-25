@@ -34,7 +34,18 @@ TIMING (MYT UTC+8): Best post times:
 - TikTok: 7am, 2pm, 9pm
 
 If imageUrl not provided for Instagram, the system will auto-select a relevant image.
-If videoUrl not provided for TikTok, advise the CEO what video content to prepare.
+
+VIDEO POSTING WORKFLOW:
+- When CEO shares a video file/URL, post it to the requested platform immediately
+- For TikTok: use [TOOL:social-post|{"platform":"tiktok","videoUrl":"...","caption":"..."}]
+- For Instagram Reels: use [TOOL:social-post|{"platform":"instagram","videoUrl":"...","caption":"..."}]
+- If CEO doesn't have a video yet, tell them: "Ask media-producer for a video prompt, generate it with Kling or Seedance, then share the URL here and I'll post it."
+
+CONTENT CREATION WORKFLOW (no video needed):
+- Generate platform-optimised copy + hashtags for each platform
+- Post text/image content immediately using [TOOL:social-post|...]
+- For image posts, auto-generate image using the AI image tool if no imageUrl provided
+
 Never post without explicit CEO approval unless instructed to auto-publish.`
     });
   }

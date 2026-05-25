@@ -14,6 +14,7 @@ import { listDriveFolder, readDriveFile, writeDriveFile, searchDriveFiles } from
 import { generatePDF, generateReportPDF } from '../tools/pdf-tool.js';
 import { sendSMS } from '../tools/sms-tool.js';
 import { emitAgentStatus, emitTaskUpdate } from '../tools/dashboard-events.js';
+import { createRepo, pushFile, listRepos } from '../tools/github-tool.js';
 
 const INPUT_MAX_CHARS    = 4000;
 const CTRL_CHAR_PATTERN  = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
@@ -39,7 +40,11 @@ const TOOL_DESCRIPTIONS = {
   'slack-notify':       'Send a notification to Slack channel. Usage: [TOOL:slack-notify|{"text":"message text"}]',
   'sms-alert':          'Send an SMS alert. Usage: [TOOL:sms-alert|{"to":"+60123456789","message":"alert text"}]',
   'stripe-balance':     'Check Stripe account balance. Usage: [TOOL:stripe-balance|{}]',
-  'stripe-charges':     'List recent Stripe charges. Usage: [TOOL:stripe-charges|{"limit":5}]'
+  'stripe-charges':     'List recent Stripe charges. Usage: [TOOL:stripe-charges|{"limit":5}]',
+  'github-push':        'Create or update a file in a GitHub repository. Usage: [TOOL:github-push|{"repo":"repo-name","path":"src/index.js","content":"file content here","message":"feat: add feature"}]',
+  'github-create-repo': 'Create a new GitHub repository. Usage: [TOOL:github-create-repo|{"name":"my-project","description":"Project description"}]',
+  'github-list-repos':  'List GitHub repositories. Usage: [TOOL:github-list-repos|{}]',
+  'video-prompt':       'Generate a detailed AI video generation prompt. Usage: [TOOL:video-prompt|{"topic":"what the video is about","style":"cinematic|social|product","duration":"5-15 seconds","platform":"instagram|tiktok|facebook"}]'
 };
 
 const TIMEOUT_MS = 25000;
@@ -289,6 +294,38 @@ Video: ${args.videoUrl || 'n/a'}]`;
       }
       case 'stripe-charges': {
         return await stripeListCharges(env, args?.limit || 5) ?? '[stripe-charges] Unavailable — STRIPE_SECRET_KEY not set';
+      }
+      case 'github-push': {
+        if (!args?.repo || !args?.path || !args?.content) return '[github-push] Missing required arguments: repo, path, content';
+        if (this._draftMode) return `[DRAFT GITHUB PUSH]\nRepo: ${args.repo}\nFile: ${args.path}\nCommit: ${args.message || 'auto-commit'}\n\nContent preview:\n${args.content.slice(0, 300)}...`;
+        const pushResult = await pushFile(args.repo, args.path, args.content, args.message || `feat: add ${args.path}`, env);
+        if (pushResult.error) return `[github-push] Error: ${pushResult.error}`;
+        return `[github-push] ✅ Pushed: ${args.path} → ${pushResult.url || args.repo}`;
+      }
+      case 'github-create-repo': {
+        if (!args?.name) return '[github-create-repo] Missing required argument: name';
+        if (this._draftMode) return `[DRAFT GITHUB REPO]\nName: ${args.name}\nDescription: ${args.description || ''}`;
+        const repoResult = await createRepo(args.name, args.description || '', env);
+        if (repoResult.error) return `[github-create-repo] Error: ${repoResult.error}`;
+        return `[github-create-repo] ✅ Created: ${repoResult.url}`;
+      }
+      case 'github-list-repos': {
+        const reposResult = await listRepos(env);
+        if (reposResult.error) return `[github-list-repos] Error: ${reposResult.error}`;
+        return `[github-list-repos] Repos: ${reposResult.repos.map(r => r.full_name).join(', ')}`;
+      }
+      case 'video-prompt': {
+        const topic = args?.topic || 'general';
+        const style = args?.style || 'cinematic';
+        const duration = args?.duration || '5-10 seconds';
+        const platform = args?.platform || 'instagram';
+        const platformNotes = {
+          instagram: 'vertical 9:16, bold text overlay, eye-catching first frame',
+          tiktok: 'vertical 9:16, fast cuts, trending music vibe, hook in first second',
+          facebook: 'horizontal 16:9 or square 1:1, clear message, captions recommended',
+        };
+        const note = platformNotes[platform] || platformNotes.instagram;
+        return `[VIDEO PROMPT READY]\n\n📋 **Copy this prompt into Kling / Seedance / any AI video tool:**\n\n---\n${style === 'cinematic' ? 'Cinematic' : style === 'social' ? 'Social media style' : 'Product showcase'} video about ${topic}. Duration: ${duration}. ${note}. High quality, professional lighting, smooth motion, no text in frame. Colour grade: warm tones, vibrant, modern. Camera: slow push-in or pan, minimal shake.\n---\n\n📌 **Platform:** ${platform}\n📐 **Format:** ${platform === 'facebook' ? '16:9' : '9:16 vertical'}\n⏱ **Duration:** ${duration}\n\nOnce generated, share the video file with MFM Corporation and we will handle posting, captions, and hashtags.`;
       }
       default:
         return `[Unknown tool: ${toolName}]`;
