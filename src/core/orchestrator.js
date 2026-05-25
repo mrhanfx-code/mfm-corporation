@@ -281,9 +281,16 @@ export async function routeMessage(message, userId, env) {
     return await handleSlashCommand(text, userId, env);
   }
 
+  const lowerText = text.toLowerCase();
+
+  // ── Tool/secret status intercept — never route to LLM ──
+  const toolQueryKw = ['what tools', 'which tools', 'tools configured', 'what secrets', 'which secrets', 'secrets configured', 'api keys', 'what api', 'missing keys', 'what is configured', "what's configured", 'tool status', 'secret status', 'check secrets', 'check tools'];
+  if (toolQueryKw.some(k => lowerText.includes(k))) {
+    return getToolsStatus(env);
+  }
+
   // ── Image generation intercept ──
   const imgKeywords = ['generate image', 'create image', 'make image', 'draw image', 'generate a picture', 'create a picture', 'generate picture', 'make a picture', 'generate photo', 'create photo', 'image of ', 'picture of ', 'illustration of ', 'generate an image', 'create an image'];
-  const lowerText = text.toLowerCase();
   if (imgKeywords.some(k => lowerText.includes(k))) {
     const prompt = text.replace(/^(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|illustration)\s+(of\s+)?/i, '').trim() || text;
     const result = await generateImage(prompt, env);
@@ -427,7 +434,7 @@ async function handleSlashCommand(text, userId, env) {
       return `🚀 *MFM Corporation AI — Online*\n\n43 agents active across 6 departments.\nType any instruction — I route it to the right specialist.\nComplex questions auto-trigger a panel debate between agents.\n\nType /help for all agents and commands.`;
 
     case '/help':
-      return `🏢 *MFM Corporation — 43 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent · strategic-planner\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent · development-advisor\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent · media-producer\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · innovation-analyst · mcp-llm-agent\n*CLO:* legal-advisor\n\n*Panel Debate* (agents argue for best answer):\n/panel strategy [question]\n/panel technical [question]\n/panel content [question]\n/panel innovation [question]\n/panel operations [question]\n/panel fullboard [question]\n_Complex questions auto-trigger a panel._\n\n*Commands:*\n/briefing — daily report (5 agents)\n/delegate [agent] [task] — direct to specific agent\n/status /tasks /metrics /team [name]\n/memo [text] /clear /query [q]\n/approve /reject /urgent\n/to [agent] /draft [agent] /follow [id]\n/cbstatus /panel`;
+      return `🏢 *MFM Corporation — 43 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent · strategic-planner\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent · development-advisor\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent · media-producer\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · innovation-analyst · mcp-llm-agent\n*CLO:* legal-advisor\n\n*Panel Debate* (agents argue for best answer):\n/panel strategy [question]\n/panel technical [question]\n/panel content [question]\n/panel innovation [question]\n/panel operations [question]\n/panel fullboard [question]\n_Complex questions auto-trigger a panel._\n\n*Commands:*\n/briefing — daily report (5 agents)\n/delegate [agent] [task] — direct to specific agent\n/status /tasks /metrics /team [name]\n/memo [text] /clear /query [q]\n/approve /reject /urgent\n/to [agent] /draft [agent] /follow [id]\n/cbstatus /panel\n/tools — show all configured API keys and secrets`;
 
     case '/image': {
       if (!args) return `Usage: /image [prompt]\nExample: /image a futuristic office building in Kuala Lumpur`;
@@ -458,6 +465,10 @@ async function handleSlashCommand(text, userId, env) {
 
     case '/status':
       return await getStatusReport(env);
+
+    case '/tools':
+    case '/secrets':
+      return getToolsStatus(env);
 
     case '/tasks':
       return await getTasksReport(env);
@@ -618,6 +629,52 @@ Example: /panel strategy Should we enter the Johor market this quarter?`;
     default:
       return '❓ Unknown command: ' + cmd + '\nType /help for all commands.';
   }
+}
+
+function getToolsStatus(env) {
+  const check = (key) => env[key] ? '✅' : '❌';
+  const val   = (key) => env[key] ? '`SET`' : '`MISSING`';
+
+  return `🔧 *MFM Corporation — Tool & Secret Status*
+
+*LLM Providers*
+${check('CEREBRAS_API_KEY')} Cerebras (primary fast LLM) — ${val('CEREBRAS_API_KEY')}
+${check('OPENROUTER_API_KEY')} OpenRouter (fallback LLMs) — ${val('OPENROUTER_API_KEY')}
+
+*Infrastructure (Cloudflare)*
+${env.KV ? '✅' : '❌'} KV Namespace (cache / approvals / circuit breaker)
+${env.db ? '✅' : '❌'} D1 Database (memory / tasks / metrics)
+${env['mfm-corporation-uploads'] ? '✅' : '❌'} R2 Bucket (file storage)
+${env.TASK_QUEUE ? '✅' : '❌'} Queue (async tasks)
+${env.AI ? '✅' : '❌'} Workers AI (image generation — Flux)
+
+*Messaging*
+${check('TELEGRAM_BOT_TOKEN')} Telegram Bot — ${val('TELEGRAM_BOT_TOKEN')}
+${check('SENDGRID_API_KEY')} Email / SendGrid — ${val('SENDGRID_API_KEY')}
+${check('TWILIO_ACCOUNT_SID')} SMS / Twilio — ${val('TWILIO_ACCOUNT_SID')}
+
+*Social Media*
+${check('META_PAGE_ACCESS_TOKEN')} Facebook / Instagram posting — ${val('META_PAGE_ACCESS_TOKEN')}
+${check('TIKTOK_ACCESS_TOKEN')} TikTok posting — ${val('TIKTOK_ACCESS_TOKEN')}
+
+*Search & Research*
+${check('EXA_API_KEY')} Exa neural search — ${val('EXA_API_KEY')}
+${check('BRAVE_API_KEY')} Brave web search — ${val('BRAVE_API_KEY')}
+${check('PERPLEXITY_API_KEY')} Perplexity research — ${val('PERPLEXITY_API_KEY')}
+
+*Code & Storage*
+${check('GITHUB_TOKEN')} GitHub (code push / repos) — ${val('GITHUB_TOKEN')}
+${check('GOOGLE_SERVICE_ACCOUNT')} Google Drive / Calendar — ${val('GOOGLE_SERVICE_ACCOUNT')}
+${check('NOTION_API_KEY')} Notion — ${val('NOTION_API_KEY')}
+
+*Finance*
+${check('STRIPE_SECRET_KEY')} Stripe (billing / revenue) — ${val('STRIPE_SECRET_KEY')}
+
+*Monitoring*
+${check('SLACK_WEBHOOK_URL')} Slack alerts — ${val('SLACK_WEBHOOK_URL')}
+${check('DASHBOARD_SECRET')} Dashboard access — ${val('DASHBOARD_SECRET')}
+
+_To fix missing: \`wrangler secret put KEY_NAME\`_`;
 }
 
 async function getStatusReport(env) {
