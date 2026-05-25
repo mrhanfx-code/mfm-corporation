@@ -280,39 +280,40 @@
           if (body) body.style.display = '';
         }
 
+        async function verify(secret) {
+          const r = await fetch(WORKER + '/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + secret },
+            body: JSON.stringify({ text: 'ping' })
+          });
+          return r.status !== 401 && r.status !== 403;
+        }
+
         window.doLogin = async function() {
           const secret = document.getElementById('loginInput').value.trim();
           const err    = document.getElementById('loginError');
+          const btn    = document.querySelector('#loginGate button');
           err.style.display = 'none';
           if (!secret) return;
+          btn.textContent = 'Checking…';
+          btn.disabled = true;
           try {
-            const res = await fetch(WORKER + '/health');
-            if (res.ok) {
-              const verifyRes = await fetch(WORKER + '/ask', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + secret },
-                body: JSON.stringify({ text: 'ping' })
-              });
-              if (verifyRes.status === 200 || verifyRes.status === 400) {
-                localStorage.setItem('mfm_secret', secret);
-                showDashboard();
-                return;
-              }
+            if (await verify(secret)) {
+              localStorage.setItem('mfm_secret', secret);
+              showDashboard();
+              return;
             }
           } catch(_) {}
+          btn.textContent = 'Sign In';
+          btn.disabled = false;
           err.style.display = 'block';
         };
 
         const saved = localStorage.getItem('mfm_secret');
         if (saved) {
-          fetch(WORKER + '/ask', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + saved },
-            body: JSON.stringify({ text: 'ping' })
-          }).then(r => {
-            if (r.status === 200 || r.status === 400) { showDashboard(); }
-            else { localStorage.removeItem('mfm_secret'); showLogin(); }
-          }).catch(() => showLogin());
+          verify(saved)
+            .then(ok => { if (ok) showDashboard(); else { localStorage.removeItem('mfm_secret'); showLogin(); } })
+            .catch(() => showLogin());
         } else {
           showLogin();
         }
