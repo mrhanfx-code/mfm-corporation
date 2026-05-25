@@ -154,6 +154,7 @@
     </style>
   </head>
   <body>
+    <div id="dashboardBody" style="display:none">
     <header>
       <div class="logo">MFM <span>Corporation</span></div>
       <div class="header-right">
@@ -245,6 +246,78 @@
         <div id="cmdResponse" class="cmd-response" style="display:none"></div>
       </div>
     </div>
+
+    </div><!-- /dashboardBody -->
+
+    <!-- Login Gate -->
+    <div id="loginGate" style="display:none;position:fixed;inset:0;z-index:9999;background:#0a0f1e;display:flex;align-items:center;justify-content:center;">
+      <div style="background:#111827;border:1px solid #1f2937;border-radius:1rem;padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.25rem;color:#f3f4f6;">MFM <span style="color:#6366f1;">Corp</span></div>
+        <div style="font-size:.8rem;color:#6b7280;margin-bottom:2rem;">CEO Command Center</div>
+        <input id="loginInput" type="password" placeholder="Dashboard secret…"
+          style="width:100%;background:#0a0f1e;border:1px solid #1f2937;border-radius:.5rem;padding:.75rem 1rem;color:#f3f4f6;font-size:.95rem;outline:none;margin-bottom:.75rem;"
+          onkeydown="if(event.key==='Enter')doLogin()" />
+        <button onclick="doLogin()"
+          style="width:100%;background:#6366f1;color:#fff;border:none;border-radius:.5rem;padding:.75rem;font-size:.95rem;font-weight:600;cursor:pointer;">
+          Sign In
+        </button>
+        <div id="loginError" style="color:#ef4444;font-size:.8rem;margin-top:.75rem;display:none;">Incorrect secret. Try again.</div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        const WORKER = 'https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev';
+        const gate   = document.getElementById('loginGate');
+        const body   = document.getElementById('dashboardBody');
+
+        function showLogin() {
+          gate.style.display = 'flex';
+          if (body) body.style.display = 'none';
+        }
+        function showDashboard() {
+          gate.style.display = 'none';
+          if (body) body.style.display = '';
+        }
+
+        window.doLogin = async function() {
+          const secret = document.getElementById('loginInput').value.trim();
+          const err    = document.getElementById('loginError');
+          err.style.display = 'none';
+          if (!secret) return;
+          try {
+            const res = await fetch(WORKER + '/health');
+            if (res.ok) {
+              const verifyRes = await fetch(WORKER + '/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + secret },
+                body: JSON.stringify({ text: 'ping' })
+              });
+              if (verifyRes.status === 200 || verifyRes.status === 400) {
+                localStorage.setItem('mfm_secret', secret);
+                showDashboard();
+                return;
+              }
+            }
+          } catch(_) {}
+          err.style.display = 'block';
+        };
+
+        const saved = localStorage.getItem('mfm_secret');
+        if (saved) {
+          fetch(WORKER + '/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + saved },
+            body: JSON.stringify({ text: 'ping' })
+          }).then(r => {
+            if (r.status === 200 || r.status === 400) { showDashboard(); }
+            else { localStorage.removeItem('mfm_secret'); showLogin(); }
+          }).catch(() => showLogin());
+        } else {
+          showLogin();
+        }
+      })();
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/dashboard.js"></script>
