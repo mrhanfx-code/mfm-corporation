@@ -67,8 +67,8 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
 
     // Call real MFM orchestrator /ask API
     try {
-      const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'https://mfm-corporation-telegram-bot.muhdfarihan.workers.dev';
-      const DASHBOARD_SECRET = import.meta.env.VITE_DASHBOARD_SECRET || '';
+      const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev';
+      const DASHBOARD_SECRET = import.meta.env.VITE_DASHBOARD_SECRET || localStorage.getItem('mfm_secret') || '';
 
       // Step 1: Upload file to R2 if present
       let file_url: string | null = null;
