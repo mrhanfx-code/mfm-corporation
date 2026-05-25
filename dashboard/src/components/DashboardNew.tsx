@@ -95,6 +95,7 @@ export function DashboardNew() {
   const [logs] = useState<LogEntry[]>(MOCK_LOGS);
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [activeNav, setActiveNav] = useState('All Agents');
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('mfm:theme') as 'dark' | 'light' || 'dark';
@@ -135,23 +136,36 @@ export function DashboardNew() {
     setSelectedAgent(null);
   };
 
+  const TEAM_MAP: Record<string, string[]> = {
+    'All Agents': [],
+    'Marketing Fleet': ['Marketing'],
+    'Core Engineering': ['Engineering'],
+    'Customer Success': ['Success'],
+    'Data Ingestion': ['Data'],
+    'Executive Strategy': ['Strategy'],
+  };
+
+  const filteredAgents = activeNav === 'All Agents' || !TEAM_MAP[activeNav]
+    ? agents
+    : agents.filter(a => TEAM_MAP[activeNav].includes(a.team));
+
   const navGroups = [
     {
       label: 'Multi-Agent Teams',
       items: [
-        { label: 'All Agents', active: true, badgeActive: true },
-        { label: 'Marketing Fleet', badgeActive: true },
-        { label: 'Core Engineering', badgeActive: true },
-        { label: 'Customer Success', badgeActive: true },
-        { label: 'Data Ingestion', badgeActive: false },
-        { label: 'Executive Strategy', badgeActive: true }
-      ]
+        { label: 'All Agents', active: activeNav === 'All Agents', badgeActive: true },
+        { label: 'Marketing Fleet', active: activeNav === 'Marketing Fleet', badgeActive: true },
+        { label: 'Core Engineering', active: activeNav === 'Core Engineering', badgeActive: true },
+        { label: 'Customer Success', active: activeNav === 'Customer Success', badgeActive: true },
+        { label: 'Data Ingestion', active: activeNav === 'Data Ingestion', badgeActive: false },
+        { label: 'Executive Strategy', active: activeNav === 'Executive Strategy', badgeActive: true }
+      ].map(item => ({ ...item, onClick: () => setActiveNav(item.label) }))
     },
     {
       label: 'Global Controls',
       items: [
-        { label: 'Settings' },
-        { label: 'System Logs' }
+        { label: 'Settings', onClick: () => alert('Settings panel coming soon') },
+        { label: 'System Logs', onClick: () => alert('System Logs coming soon') }
       ]
     }
   ];
@@ -265,7 +279,7 @@ export function DashboardNew() {
             gap: '16px', 
             marginBottom: '32px' 
           }}>
-            {agents.map((agent) => (
+            {filteredAgents.map((agent) => (
               <AgentCard
                 key={agent.id}
                 agent={agent}
