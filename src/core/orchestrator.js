@@ -144,11 +144,16 @@ const PARALLEL_KEYWORDS = {
   'tech-build':       ['architecture review', 'system design', 'tech stack review', 'full tech audit'],
 };
 
-// Agents that can take irreversible external actions
-const APPROVAL_AGENTS = new Set(['social-media-agent', 'customer-success-agent', 'ops-coordinator']);
+// Agents that ALWAYS require CEO approval before executing (irreversible external actions)
+const ALWAYS_APPROVE_AGENTS = new Set(['social-media-agent']);
+
+// Agents that require approval only on specific action keywords
+const APPROVAL_AGENTS = new Set(['customer-success-agent', 'ops-coordinator']);
 const APPROVAL_KEYWORDS = ['send email', 'email to', 'send to', 'post to', 'post on', 'publish', 'post facebook', 'post instagram', 'post tiktok', 'notify', 'let them know', 'announce to'];
 
 function requiresApproval(agentName, text) {
+  // Social media ALWAYS requires approval — no keyword check needed
+  if (ALWAYS_APPROVE_AGENTS.has(agentName)) return true;
   if (!APPROVAL_AGENTS.has(agentName)) return false;
   const lower = text.toLowerCase();
   return APPROVAL_KEYWORDS.some(k => lower.includes(k));
@@ -361,7 +366,11 @@ export async function routeMessage(message, userId, env) {
         );
       }
 
-      return `📋 *[DRAFT — ${routing.agent.replace(/-/g, ' ').toUpperCase()}]*\n\n${draft}\n\n---\n✅ Reply */approve* to execute  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_`;
+      const isSocial = ALWAYS_APPROVE_AGENTS.has(routing.agent);
+      const approvalMsg = isSocial
+        ? `📱 *[SOCIAL MEDIA DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Nothing has been posted yet.*\n✅ Reply */approve* to post now  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`
+        : `📋 *[DRAFT — ${routing.agent.replace(/-/g, ' ').toUpperCase()}]*\n\n${draft}\n\n---\n✅ Reply */approve* to execute  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_`;
+      return approvalMsg;
     }
 
     const agent = new AgentClass();
