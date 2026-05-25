@@ -40,7 +40,7 @@ export async function postToInstagram(caption, env, imageUrl = null) {
   if (!env.INSTAGRAM_ACCOUNT_ID)   return '[instagram] Missing INSTAGRAM_ACCOUNT_ID';
 
   try {
-    const finalImage = imageUrl || await getUnsplashImage(caption);
+    const finalImage = imageUrl || getPlaceholderImage(caption);
 
     const containerRes = await fetch(`${META_API}/${env.INSTAGRAM_ACCOUNT_ID}/media`, {
       method: 'POST',
@@ -105,7 +105,12 @@ export async function postToTikTok(videoUrl, caption, env) {
   }
 }
 
+const VALID_PLATFORMS = new Set(['facebook', 'instagram', 'tiktok']);
+
 export async function postSocial(platform, args, env) {
+  if (!platform || !VALID_PLATFORMS.has(platform.toLowerCase())) {
+    return `[social-post] Unknown platform: ${platform}. Use: facebook, instagram, or tiktok`;
+  }
   switch (platform.toLowerCase()) {
     case 'facebook':
       return await postToFacebook(args.text || args.caption, env, args.imageUrl || null);

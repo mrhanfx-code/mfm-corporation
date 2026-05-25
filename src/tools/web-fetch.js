@@ -1,6 +1,23 @@
 // Web fetch tool — structured content extraction for agents
 
+function isValidHttpUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname.endsWith('.local')) return false;
+    if (hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.')) return false;
+    if (hostname.startsWith('172.')) {
+      const octets = hostname.split('.').map(Number);
+      if (octets[1] >= 16 && octets[1] <= 31) return false;
+    }
+    return true;
+  } catch { return false; }
+}
+
 export async function fetchWebContent(url, maxChars = 3000) {
+  if (!url || !isValidHttpUrl(url)) return '[web-fetch error: invalid or blocked URL]';
+  const limit = Math.max(100, Math.min(maxChars, 20000));
   try {
     const response = await fetch(url, {
       headers: {
@@ -27,7 +44,7 @@ export async function fetchWebContent(url, maxChars = 3000) {
       }
     }
 
-    return text.slice(0, maxChars);
+    return text.slice(0, limit);
   } catch (err) {
     return `[web-fetch error: ${err.message}]`;
   }
@@ -90,13 +107,14 @@ function extractContent(html, url) {
   }
 
   if (parts.length < 3) {
-    return decodeEntities(cleaned.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ')).slice(0, 3000);
+    return decodeEntities(cleaned.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ')).slice(0, 20000);
   }
 
   return `[Source: ${url}]\n\n` + parts.join('\n\n');
 }
 
 async function fetchViaJina(url, maxChars = 3000) {
+  if (!url || !isValidHttpUrl(url)) return null;
   try {
     const response = await fetch(`https://r.jina.ai/${url}`, {
       headers: { 'Accept': 'text/plain', 'X-Return-Format': 'markdown' },
@@ -104,13 +122,14 @@ async function fetchViaJina(url, maxChars = 3000) {
     });
     if (!response.ok) throw new Error(`Jina HTTP ${response.status}`);
     const text = await response.text();
-    return text.slice(0, maxChars);
+    return text.slice(0, Math.max(100, Math.min(maxChars, 20000)));
   } catch (err) {
     return null;
   }
 }
 
 export async function extractLinks(url, max = 10) {
+  if (!url || !isValidHttpUrl(url)) return [];
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MFM-Corporation-Bot/2.0)' },

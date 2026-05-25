@@ -6,7 +6,7 @@ export class RiskAssessor extends AgentBase {
     super({
       name: 'risk-assessor',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch'],
+      tools: ['web-fetch', 'perplexity-search', 'brave-search'],
       systemPrompt: `You are the Risk Assessment Officer for MFM Corporation.
 Expertise: business risk, financial risk, operational risk, legal/regulatory compliance (Malaysia).
 

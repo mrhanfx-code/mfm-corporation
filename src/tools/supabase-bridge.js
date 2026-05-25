@@ -17,11 +17,12 @@ function base(env) {
 async function insert(table, row, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return;
   try {
-    await fetch(`${base(env)}/${table}`, {
+    const res = await fetch(`${base(env)}/${table}`, {
       method: 'POST',
       headers: getHeaders(env, true),
       body: JSON.stringify(row)
     });
+    if (!res.ok) console.warn(`[Supabase] insert ${table} failed: ${res.status} ${await res.text()}`);
   } catch (err) {
     console.warn(`[Supabase] insert ${table} failed: ${err.message}`);
   }
@@ -31,11 +32,12 @@ async function upsert(table, row, onConflict, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return;
   try {
     const headers = { ...getHeaders(env, true), 'Prefer': `resolution=merge-duplicates,return=minimal` };
-    await fetch(`${base(env)}/${table}?on_conflict=${onConflict}`, {
+    const res = await fetch(`${base(env)}/${table}?on_conflict=${onConflict}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(row)
     });
+    if (!res.ok) console.warn(`[Supabase] upsert ${table} failed: ${res.status} ${await res.text()}`);
   } catch (err) {
     console.warn(`[Supabase] upsert ${table} failed: ${err.message}`);
   }
@@ -55,13 +57,34 @@ export async function syncAgentEvent({ agent, task, response, score, latencyMs, 
 }
 
 export async function syncAgentMetrics({ agent, totalRuns, avgScore, avgLatency }, env) {
-  await upsert('agent_metrics', {
-    agent,
-    total_runs:  totalRuns,
-    avg_score:   avgScore,
-    avg_latency: avgLatency,
-    updated_at:  new Date().toISOString()
-  }, 'agent', env);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return;
+  try {
+    const res = await fetch(
+      `${base(env)}/agent_metrics?agent=eq.${encodeURIComponent(agent)}&select=total_runs,avg_score,avg_latency`,
+      { headers: getHeaders(env, false) }
+    );
+    let existing = { total_runs: 0, avg_score: avgScore, avg_latency: avgLatency };
+    if (res.ok) {
+      const data = await res.json();
+      if (data.length) existing = data[0];
+    }
+    const newTotal = (existing.total_runs || 0) + totalRuns;
+    const newAvgScore = newTotal > 0
+      ? Math.round(((existing.avg_score || 0) * (existing.total_runs || 0) + avgScore * totalRuns) / newTotal)
+      : avgScore;
+    const newAvgLatency = newTotal > 0
+      ? Math.round(((existing.avg_latency || 0) * (existing.total_runs || 0) + avgLatency * totalRuns) / newTotal)
+      : avgLatency;
+    await upsert('agent_metrics', {
+      agent,
+      total_runs:  newTotal,
+      avg_score:   newAvgScore,
+      avg_latency: newAvgLatency,
+      updated_at:  new Date().toISOString()
+    }, 'agent', env);
+  } catch (err) {
+    console.warn(`[Supabase] syncAgentMetrics failed: ${err.message}`);
+  }
 }
 
 export async function syncRoutingDecision({ agent, taskType, reasoning, confidence }, env) {

@@ -4,6 +4,12 @@
 import { getTopPerformingAgents, getAllRecentTasks } from '../tools/d1-store.js';
 
 export async function buildContextCard(agentName, env) {
+  const cacheKey = `ctx:${agentName}:${Math.floor(Date.now() / 30000)}`;
+  if (env.KV) {
+    const cached = await env.KV.get(cacheKey);
+    if (cached) return cached;
+  }
+
   try {
     const [topAgents, recentTasks] = await Promise.all([
       getTopPerformingAgents(3, env),
@@ -17,7 +23,9 @@ export async function buildContextCard(agentName, env) {
     });
 
     const lines = [
-      `COMPANY: MFM Corporation  |  CEO: Remy  |  MYT: ${myt}  |  You are: ${agentName}`
+      `COMPANY: MFM Corporation  |  CEO: Remy  |  MYT: ${myt}  |  You are: ${agentName}`,
+      `IDENTITY: Malaysian AI automation startup (KL). Sells AI agent services + social media management to SEA SMEs. Zero-cost bootstrapped. NOT a manufacturer. NOT hardware. Solo founder + AI agents.`,
+      `REVENUE MODEL: Service (project-based) → SaaS (agent templates). Year 1 target: MYR 60K-120K. Free infra: Cloudflare Workers + OpenRouter free tier.`
     ];
 
     if (topAgents.length) {
@@ -33,9 +41,13 @@ export async function buildContextCard(agentName, env) {
       lines.push(`RECENT CEO TASKS: ${recent}`);
     }
 
-    return lines.join('\n');
+    const card = lines.join('\n');
+    if (env.KV) env.KV.put(cacheKey, card, { expirationTtl: 45 }).catch(() => {});
+    return card;
   } catch {
     const myt = new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur', dateStyle: 'medium' });
-    return `COMPANY: MFM Corporation | CEO: Remy | MYT: ${myt} | You are: ${agentName}`;
+    const card = `COMPANY: MFM Corporation | CEO: Remy | MYT: ${myt} | You are: ${agentName}\nIDENTITY: Malaysian AI automation startup (KL). Sells AI agent services to SEA SMEs. NOT a manufacturer.`;
+    if (env.KV) env.KV.put(cacheKey, card, { expirationTtl: 45 }).catch(() => {});
+    return card;
   }
 }

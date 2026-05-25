@@ -18,6 +18,13 @@ export async function completeTask(id, output, qualityScore, env) {
   ).bind(output, 'completed', qualityScore, id).run();
 }
 
+export async function updateTaskScore(id, score, env) {
+  if (!env.db || !id) return;
+  await env.db.prepare(
+    'UPDATE tasks SET quality_score=? WHERE id=?'
+  ).bind(score, id).run();
+}
+
 export async function getRecentTasks(agent, limit = 10, env) {
   if (!env.db) return [];
   const result = await env.db.prepare(
@@ -46,7 +53,7 @@ export async function saveMemory(agent, userId, role, content, env) {
 export async function getMemory(agent, userId, limit = 20, env) {
   if (!env.db) return [];
   const result = await env.db.prepare(
-    'SELECT role, content FROM agent_memory WHERE agent=? AND user_id=? ORDER BY created_at DESC LIMIT ?'
+    'SELECT role, content FROM agent_memory WHERE agent=? AND user_id=? ORDER BY created_at DESC, id DESC LIMIT ?'
   ).bind(agent, String(userId), limit).all();
   return (result.results || []).reverse();
 }
@@ -103,8 +110,16 @@ export async function getAllMetrics(days = 7, env) {
   if (!env.db) return [];
   const result = await env.db.prepare(
     'SELECT * FROM metrics ORDER BY date DESC, agent ASC LIMIT ?'
-  ).bind(days * 20).all();
+  ).bind(days * 30).all();
   return result.results || [];
+}
+
+export async function getTaskById(id, env) {
+  if (!env.db) return null;
+  const result = await env.db.prepare(
+    'SELECT * FROM tasks WHERE id = ?'
+  ).bind(id).first();
+  return result || null;
 }
 
 export async function clearAllMemory(userId, env) {
@@ -116,15 +131,35 @@ export async function clearAllMemory(userId, env) {
 
 export async function updateRoutingScore(agent, qualityScore, env) {
   if (!env.db) return;
-  const date = new Date().toISOString().split('T')[0];
+  const existing = await env.db.prepare(
+    'SELECT total_reviews, avg_score FROM routing_scores WHERE agent = ?'
+  ).bind(agent).first();
+  const reviews = (existing?.total_reviews || 0) + 1;
+  const newAvg = existing
+    ? Math.round(((existing.avg_score * existing.total_reviews) + qualityScore) / reviews)
+    : qualityScore;
   await env.db.prepare(`
-    INSERT INTO metrics (agent, date, tasks_completed, avg_quality_score, avg_response_ms)
-    VALUES (?, ?, 0, ?, 0)
-    ON CONFLICT(agent, date) DO UPDATE SET
-      avg_quality_score = CAST(
-        (avg_quality_score * tasks_completed + excluded.avg_quality_score)
-        / NULLIF(tasks_completed + 1, 0) AS REAL)
-  `).bind(agent, date, qualityScore).run();
+    INSERT INTO routing_scores (agent, total_reviews, avg_score, updated_at)
+    VALUES (?, ?, ?, datetime('now'))
+    ON CONFLICT(agent) DO UPDATE SET
+      total_reviews = excluded.total_reviews,
+      avg_score = excluded.avg_score,
+      updated_at = excluded.updated_at
+  `).bind(agent, reviews, newAvg).run();
+}
+
+export async function transitionTask(id, newStatus, env, extra = {}) {
+  if (!env.db) return;
+  const validStatuses = ['pending','analyzing','drafting','reviewing','approved','rejected','executing','completed','failed'];
+  if (!validStatuses.includes(newStatus)) throw new Error(`Invalid task status: ${newStatus}`);
+  const fields = ['status = ?'];
+  const binds  = [newStatus];
+  if (extra.output !== undefined)       { fields.push('output = ?');        binds.push(extra.output); }
+  if (extra.quality_score !== undefined){ fields.push('quality_score = ?'); binds.push(extra.quality_score); }
+  if (extra.hitl_required !== undefined){ fields.push('hitl_required = ?'); binds.push(extra.hitl_required ? 1 : 0); }
+  if (['completed','failed','rejected'].includes(newStatus)) fields.push('completed_at = datetime(\'now\')');
+  binds.push(id);
+  await env.db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).bind(...binds).run();
 }
 
 export async function getTopPerformingAgents(limit = 5, env) {
@@ -132,7 +167,7 @@ export async function getTopPerformingAgents(limit = 5, env) {
   const result = await env.db.prepare(`
     SELECT agent,
            SUM(tasks_completed) AS total_tasks,
-           AVG(avg_quality_score) AS avg_score
+           CAST(SUM(avg_quality_score * tasks_completed) / NULLIF(SUM(tasks_completed), 0) AS REAL) AS avg_score
     FROM metrics
     WHERE date >= date('now', '-7 days')
     GROUP BY agent

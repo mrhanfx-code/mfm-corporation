@@ -4,6 +4,9 @@ const EXA_BASE = 'https://api.exa.ai';
 
 export async function searchExa(query, env, options = {}) {
   if (!env.EXA_API_KEY) return '[Exa] No EXA_API_KEY configured';
+  if (!query || typeof query !== 'string') return '[Exa] Query is required';
+  if (query.length > 1000) return '[Exa] Query too long (max 1000 characters)';
+  if (query.trim().length < 3) return '[Exa] Query too short';
 
   const { numResults = 5, type = 'neural', includeText = true } = options;
 

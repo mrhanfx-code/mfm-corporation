@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: oklch(12% 0.015 255);
+  --surface: oklch(16% 0.02 255);
+  --fg: oklch(95% 0.01 255);
+  --muted: oklch(55% 0.02 255);
+  --border: oklch(22% 0.04 255);
+  --accent: oklch(75% 0.18 190);
+  --success: oklch(72% 0.18 150);
+  --warning: oklch(78% 0.16 85);
+  --danger: oklch(62% 0.22 28);
+  --sidebar-width: 260px;
+  --radius: 4px;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] {
+  --bg: oklch(98% 0.005 250);
+  --surface: oklch(100% 0 0);
+  --fg: oklch(22% 0.02 240);
+  --muted: oklch(50% 0.018 240);
+  --border: oklch(90% 0.008 240);
+  --accent: oklch(58% 0.16 145);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}

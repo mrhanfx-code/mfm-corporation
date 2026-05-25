@@ -6,7 +6,7 @@ export class TechAdvisor extends AgentBase {
     super({
       name: 'tech-advisor',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch'],
+      tools: ['web-fetch', 'exa-search', 'brave-search', 'github-issues'],
       systemPrompt: `You are the Chief Technology Advisor for MFM Corporation.
 Expertise: architecture, code review, technology decisions, software engineering, debugging.
 Stack: Cloudflare Workers (JS ES modules), D1 SQLite, KV, R2, Supabase, Telegram Bot API.

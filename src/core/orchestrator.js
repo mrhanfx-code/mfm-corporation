@@ -1,32 +1,58 @@
 // Orchestrator — classifies CEO intent, routes to correct department agent
 
 import { callLLM, parseJSON, MODELS } from './llm-client.js';
-import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory, updateRoutingScore, getTopPerformingAgents } from '../tools/d1-store.js';
+import { alertLowQualityScore } from '../tools/alerting.js';
+import { CircuitBreaker } from './circuit-breaker.js';
+import { runPanel, PANELS, shouldUsePanel, pickPanel } from './multi-agent-panel.js';
+import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory, getTopPerformingAgents, updateRoutingScore } from '../tools/d1-store.js';
 import { nl2sqlQuery } from '../tools/nl2sql-tool.js';
 import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js';
 import { reviewOutput } from './quality-reviewer.js';
 import { AgentBase } from './agent-base.js';
 import { buildContextCard } from './context-card.js';
+import { emitDashboardEvent } from '../tools/dashboard-events.js';
 
 import { OpsCoordinator } from '../agents/coo/ops-coordinator.js';
+import { StrategicPlanner } from '../agents/coo/strategic-planner.js';
 import { QualityOpsReviewer } from '../agents/coo/quality-ops-reviewer.js';
 import { ProcessOptimizer } from '../agents/coo/process-optimizer.js';
 import { DataGovernanceAgent } from '../agents/coo/data-governance-agent.js';
+import { MeetingScheduler } from '../agents/coo/meeting-scheduler.js';
+import { ReportingAnalyst } from '../agents/coo/reporting-analyst.js';
+import { ProjectManager } from '../agents/coo/project-manager.js';
+import { NotificationManager } from '../agents/coo/notification-manager.js';
+import { GoogleDriveAgent } from '../agents/coo/google-drive-agent.js';
+import { AnalyticsReporter } from '../agents/coo/analytics-reporter.js';
+import { PDFGenerator } from '../agents/coo/pdf-generator.js';
+import { QualityControlManager } from '../agents/coo/quality-control-manager.js';
 import { TechAdvisor } from '../agents/cto/tech-advisor.js';
+import { DevelopmentAdvisor } from '../agents/cto/development-advisor.js';
 import { DevOpsMonitor } from '../agents/cto/devops-monitor.js';
 import { SecurityAuditor } from '../agents/cto/security-auditor.js';
 import { IntegrationAgent } from '../agents/cto/integration-agent.js';
+import { FrontendDeveloper } from '../agents/cto/frontend-developer.js';
+import { BackendDeveloper } from '../agents/cto/backend-developer.js';
+import { QAEngineer } from '../agents/cto/qa-engineer.js';
+import { DatabaseSpecialist } from '../agents/cto/database-specialist.js';
+import { CloudEngineer } from '../agents/cto/cloud-engineer.js';
 import { ContentWriter } from '../agents/cmo/content-writer.js';
+import { MediaProducer } from '../agents/cmo/media-producer.js';
 import { MarketAnalyst } from '../agents/cmo/market-analyst.js';
 import { CustomerSuccessAgent } from '../agents/cmo/customer-success-agent.js';
 import { SocialMediaAgent } from '../agents/cmo/social-media-agent.js';
+import { EmailMarketingAgent } from '../agents/cmo/email-marketing-agent.js';
 import { FinancePlanner } from '../agents/cfo/finance-planner.js';
 import { RiskAssessor } from '../agents/cfo/risk-assessor.js';
+import { GrantTracker } from '../agents/cfo/grant-tracker.js';
+import { RevenueAnalyst } from '../agents/cfo/revenue-analyst.js';
 import { ResearchAgent } from '../agents/cino/research-agent.js';
+import { InnovationAnalyst } from '../agents/cino/innovation-analyst.js';
 import { IdeaGenerator } from '../agents/cino/idea-generator.js';
 import { TrendSpotter } from '../agents/cino/trend-spotter.js';
 import { InnovationCoach } from '../agents/cino/innovation-coach.js';
 import { McpLlmAgent } from '../agents/cino/mcp-llm-agent.js';
+import { TechnologyTracker } from '../agents/cino/technology-tracker.js';
+import { DataAnalyst } from '../agents/cino/data-analyst.js';
 import { LegalAdvisor } from '../agents/clo/legal-advisor.js';
 
 const ORCHESTRATOR_MODEL = MODELS.CEREBRAS_FAST;
@@ -34,10 +60,20 @@ const ORCHESTRATOR_MODEL = MODELS.CEREBRAS_FAST;
 const SYSTEM_PROMPT = `You are the General Manager of MFM Corporation, reporting directly to CEO Remy.
 Your job is to classify the CEO's message and route it to the best agent.
 
+COMPANY IDENTITY (memorise this — never invent alternative descriptions):
+- MFM Corporation is a Malaysian AI automation startup, founded by CEO Remy, headquartered in Kuala Lumpur.
+- Business: We sell AI automation services, custom agent development, and social media management to Malaysian SMEs and SEA businesses.
+- Model: Zero-cost bootstrapped (Cloudflare Workers, free-tier LLMs). Service revenue funds SaaS product development.
+- Revenue target: MYR 60,000–120,000 Year 1; MYR 500,000–1,000,000 by Year 3.
+- Core product: A 24-agent AI system (this system) that runs the company autonomously via Telegram.
+- Market: AI agents market USD 11.55B globally (2026), 43.57% CAGR. Malaysia: 73% of 2.4M AI-using businesses still at basic adoption — our target gap.
+- MFM is NOT a manufacturing company. MFM is NOT a hardware company. MFM has NO physical products.
+- Team: Solo founder (CEO Remy) + AI agents. First contractor planned at Month 3.
+
 Respond ONLY with valid JSON:
 {
   "department": "coo|cto|cmo|cfo|cino|clo|direct",
-  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|tech-advisor|devops-monitor|security-auditor|integration-agent|content-writer|market-analyst|customer-success-agent|social-media-agent|finance-planner|risk-assessor|research-agent|idea-generator|trend-spotter|innovation-coach|mcp-llm-agent|legal-advisor|direct",
+  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct",
   "task_type": "brief task description",
   "urgency": "high|medium|low",
   "reasoning": "one sentence"
@@ -48,21 +84,43 @@ Routing rules:
 - coo/quality-ops-reviewer: review quality of work, output evaluation
 - coo/process-optimizer: improve workflows, identify bottlenecks, efficiency
 - coo/data-governance-agent: data privacy, PDPA Malaysia, compliance, data retention
+- coo/strategic-planner: project plans, roadmaps, resource allocation, execution strategy, milestones
+- coo/meeting-scheduler: book meetings, find free slots, send invites via Google Calendar
+- coo/reporting-analyst: compile business reports, weekly summaries, performance dashboards, executive briefs
+- coo/project-manager: end-to-end project tracking, WBS, milestone management, cross-team coordination
+- coo/notification-manager: compose and dispatch alerts across email, Slack, SMS
+- coo/google-drive-agent: read/write/search documents in Google Drive
+- coo/analytics-reporter: interpret D1 metrics, agent performance analysis, business KPIs
+- coo/pdf-generator: convert content into professional PDF documents
+- coo/quality-control-manager: cross-departmental quality authority, score outputs 0-100, audit processes
 - cto/tech-advisor: code, architecture, technical decisions, software, debugging
 - cto/devops-monitor: deployment, infrastructure, system health, alerts
 - cto/security-auditor: security issues, vulnerabilities, access control
 - cto/integration-agent: API integrations, webhooks, third-party connections
+- cto/development-advisor: software development planning, build advice, dev team guidance, code strategy
+- cto/frontend-developer: React, Tailwind CSS, Cloudflare Pages, UI/UX implementation
+- cto/backend-developer: Cloudflare Workers, D1 SQLite, KV, R2, API design
+- cto/qa-engineer: test plans, bug triage, test automation, code review
+- cto/database-specialist: D1 schema design, query optimisation, migrations, data governance
+- cto/cloud-engineer: Cloudflare platform, wrangler, edge deployment, free tier limits
 - cmo/content-writer: write emails, posts, announcements, reports, copy
 - cmo/market-analyst: market research, competitor analysis, industry news
 - cmo/customer-success-agent: client relations, customer feedback, retention, support
 - cmo/social-media-agent: post to Facebook, Instagram, TikTok; social media content, captions, hashtags, scheduling
+- cmo/media-producer: video production, podcast, multimedia briefs, visual brand campaigns, content production strategy
+- cmo/email-marketing-agent: email campaigns, newsletters, cold outreach, nurture sequences, SendGrid
 - cfo/finance-planner: budgets, forecasts, costs, revenue, financial planning
 - cfo/risk-assessor: risk analysis, mitigation, compliance, liability
+- cfo/grant-tracker: identify and track Malaysian grants (MDEC, SME Corp, Cradle), eligibility, deadlines
+- cfo/revenue-analyst: revenue tracking, MRR/ARR, pipeline, MYR 60K-120K target progress
 - cino/research-agent: deep research on any topic, synthesis, citations
 - cino/idea-generator: brainstorming, creative ideas, new concepts
 - cino/trend-spotter: trends, emerging tech, market signals, opportunities
 - cino/innovation-coach: refine ideas, Socratic questioning, strategy coaching
+- cino/innovation-analyst: patent research, breakthrough technology analysis, competitive innovation tracking, technology evaluation
 - cino/mcp-llm-agent: AI model evaluation, LLM benchmarks, MCP tools, AI adoption
+- cino/technology-tracker: monitor new AI tools, frameworks, LLMs, platforms for MFM competitive edge
+- cino/data-analyst: statistical analysis, D1 data interpretation, forecasting, anomaly detection
 - clo/legal-advisor: contracts, legal compliance, regulations, Malaysian law, IP, employment law, corporate governance, disputes, PDPA, SSM, Bank Negara, legal risk, NDA, terms of service
 - direct: greetings, slash commands (/start, /help, /status, /tasks, /metrics, /team, /memo, /clear)`;
 
@@ -116,7 +174,6 @@ async function runParallelAgents(agentNames, task, userId, env) {
       const { output, agent } = r.value;
       const review = await reviewOutput(agentNames[i], 'parallel', output, env).catch(() => ({ score: 75, improved_response: null }));
       if (agent) agent.finalizeScore(review.score, env).catch(() => {});
-      updateRoutingScore(agentNames[i], review.score, env).catch(() => {});
       return `*[${label}]* _(${review.score}/100)_\n\n${review.improved_response || output}`;
     }
     return `*[${label}]*\n\n⚠️ ${r.reason?.message || 'Error'}`;
@@ -125,31 +182,89 @@ async function runParallelAgents(agentNames, task, userId, env) {
   return `🔄 *PARALLEL BRIEFING — ${agentNames.length} specialists*\n\n` + sections.join('\n\n---\n\n');
 }
 
+const PANEL_AGENT_REGISTRY = {
+  'research-agent':     () => new ResearchAgent(),
+  'strategic-planner':  () => new StrategicPlanner(),
+  'risk-assessor':      () => new RiskAssessor(),
+  'development-advisor':() => new DevelopmentAdvisor(),
+  'tech-advisor':       () => new TechAdvisor(),
+  'security-auditor':   () => new SecurityAuditor(),
+  'content-writer':     () => new ContentWriter(),
+  'market-analyst':     () => new MarketAnalyst(),
+  'media-producer':     () => new MediaProducer(),
+  'innovation-analyst': () => new InnovationAnalyst(),
+  'trend-spotter':      () => new TrendSpotter(),
+  'idea-generator':     () => new IdeaGenerator(),
+  'ops-coordinator':    () => new OpsCoordinator(),
+  'finance-planner':    () => new FinancePlanner(),
+  'legal-advisor':      () => new LegalAdvisor(),
+  'meeting-scheduler':  () => new MeetingScheduler(),
+  'project-manager':    () => new ProjectManager(),
+  'backend-developer':  () => new BackendDeveloper(),
+  'frontend-developer': () => new FrontendDeveloper(),
+  'qa-engineer':        () => new QAEngineer(),
+  'database-specialist':() => new DatabaseSpecialist(),
+  'cloud-engineer':     () => new CloudEngineer(),
+  'grant-tracker':      () => new GrantTracker(),
+  'revenue-analyst':    () => new RevenueAnalyst(),
+  'technology-tracker': () => new TechnologyTracker(),
+  'data-analyst':       () => new DataAnalyst(),
+  'email-marketing-agent': () => new EmailMarketingAgent(),
+  'google-drive-agent': () => new GoogleDriveAgent(),
+  'analytics-reporter': () => new AnalyticsReporter(),
+  'pdf-generator':      () => new PDFGenerator(),
+  'notification-manager':() => new NotificationManager(),
+  'quality-control-manager': () => new QualityControlManager(),
+};
+
 const AGENT_MAP = {
   'ops-coordinator': OpsCoordinator,
   'quality-ops-reviewer': QualityOpsReviewer,
   'process-optimizer': ProcessOptimizer,
   'data-governance-agent': DataGovernanceAgent,
+  'strategic-planner': StrategicPlanner,
+  'meeting-scheduler': MeetingScheduler,
+  'reporting-analyst': ReportingAnalyst,
+  'project-manager': ProjectManager,
+  'notification-manager': NotificationManager,
+  'google-drive-agent': GoogleDriveAgent,
+  'analytics-reporter': AnalyticsReporter,
+  'pdf-generator': PDFGenerator,
+  'quality-control-manager': QualityControlManager,
   'tech-advisor': TechAdvisor,
   'devops-monitor': DevOpsMonitor,
   'security-auditor': SecurityAuditor,
   'integration-agent': IntegrationAgent,
+  'development-advisor': DevelopmentAdvisor,
+  'frontend-developer': FrontendDeveloper,
+  'backend-developer': BackendDeveloper,
+  'qa-engineer': QAEngineer,
+  'database-specialist': DatabaseSpecialist,
+  'cloud-engineer': CloudEngineer,
   'content-writer': ContentWriter,
   'market-analyst': MarketAnalyst,
   'customer-success-agent': CustomerSuccessAgent,
   'social-media-agent': SocialMediaAgent,
+  'media-producer': MediaProducer,
+  'email-marketing-agent': EmailMarketingAgent,
   'finance-planner': FinancePlanner,
   'risk-assessor': RiskAssessor,
+  'grant-tracker': GrantTracker,
+  'revenue-analyst': RevenueAnalyst,
   'research-agent': ResearchAgent,
   'idea-generator': IdeaGenerator,
   'trend-spotter': TrendSpotter,
   'innovation-coach': InnovationCoach,
+  'innovation-analyst': InnovationAnalyst,
   'mcp-llm-agent': McpLlmAgent,
-  'legal-advisor': LegalAdvisor
+  'technology-tracker': TechnologyTracker,
+  'data-analyst': DataAnalyst,
+  'legal-advisor': LegalAdvisor,
 };
 
 export async function routeMessage(message, userId, env) {
   const text = (message.text || '').trim();
+  const isUrgent = message.urgent || false;
 
   if (text.startsWith('/')) {
     return await handleSlashCommand(text, userId, env);
@@ -158,6 +273,16 @@ export async function routeMessage(message, userId, env) {
   const parallelKey = detectParallelIntent(text);
   if (parallelKey) {
     return await runParallelAgents(PARALLEL_ROUTES[parallelKey], text, userId, env);
+  }
+
+  // Auto-panel: complex decisions get multi-agent debate
+  if (shouldUsePanel(text)) {
+    const panelKey = pickPanel(text);
+    const panel = PANELS[panelKey];
+    const panelAgents = panel.agentNames
+      .map(n => PANEL_AGENT_REGISTRY[n]?.())
+      .filter(Boolean);
+    return await runPanel(text, panelAgents, userId, env);
   }
 
   try {
@@ -188,15 +313,17 @@ export async function routeMessage(message, userId, env) {
     const agentOptions = { contextCard };
 
     // CEO approval gate (LangGraph human-in-the-loop pattern)
-    if (requiresApproval(routing.agent, text)) {
+    if (requiresApproval(routing.agent, text) && !isUrgent) {
       const agent = new AgentClass();
       const draft = await agent.run(text, userId, env, { ...agentOptions, draftMode: true });
 
-      await env.KV.put(
-        `pending:${userId}`,
-        JSON.stringify({ text, agentName: routing.agent }),
-        { expirationTtl: 3600 }
-      );
+      if (env.KV) {
+        await env.KV.put(
+          `pending:${userId}`,
+          JSON.stringify({ text, agentName: routing.agent }),
+          { expirationTtl: 3600 }
+        );
+      }
 
       return `📋 *[DRAFT — ${routing.agent.replace(/-/g, ' ').toUpperCase()}]*\n\n${draft}\n\n---\n✅ Reply */approve* to execute  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_`;
     }
@@ -205,12 +332,38 @@ export async function routeMessage(message, userId, env) {
     const rawResponse = await agent.run(text, userId, env, agentOptions);
 
     const review = await reviewOutput(routing.agent, routing.task_type, rawResponse, env);
-    updateRoutingScore(routing.agent, review.score, env).catch(() => {});
     agent.finalizeScore(review.score, env).catch(() => {});
+    updateRoutingScore(routing.agent, review.score, env).catch(() => {});
+    alertLowQualityScore(routing.agent, review.score, env).catch(() => {});
+
+    // ── Compulsory error recovery: 3 low-quality responses → research-agent intervenes ──
+    if (env.KV && routing.agent !== 'research-agent') {
+      const failKey = `fail:${routing.agent}`;
+      if (review.score < 50) {
+        const fails = parseInt(await env.KV.get(failKey) || '0') + 1;
+        await env.KV.put(failKey, String(fails), { expirationTtl: 3600 });
+        if (fails >= 3) {
+          await env.KV.delete(failKey);
+          const recoveryAgent = new ResearchAgent();
+          const recoveryTask = `[COMPULSORY ERROR RECOVERY] Agent "${routing.agent}" has failed 3 times.\n\nOriginal task: ${text}\n\nFailed response (score ${review.score}/100): ${rawResponse.slice(0, 600)}\n\nAnalyse why that answer was poor and deliver a correct, high-quality answer instead.`;
+          const recoveryCtx = await buildContextCard('research-agent', env).catch(() => '');
+          const recovery = await recoveryAgent.run(recoveryTask, userId, env, { contextCard: recoveryCtx });
+          return `🔬 *[RESEARCH AGENT — ERROR RECOVERY]*\n_${routing.agent} failed 3 times. Research Team intervened._\n\n${recovery}`;
+        }
+      } else {
+        env.KV.delete(failKey).catch(() => {});
+      }
+    }
+
     const finalResponse = review.improved_response || rawResponse;
     const header = `*[${routing.agent.replace(/-/g, ' ').toUpperCase()}]* _(score: ${review.score}/100)_\n\n`;
     const output = header + finalResponse;
     syncCeoCommand({ command: text, userId, response: output }, env).catch(() => {});
+    
+    // Emit dashboard event for task completion
+    emitAgentStatus(env, routing.agent, 'active', text).catch(() => {});
+    emitTaskUpdate(env, taskId, 'completed', review.score).catch(() => {});
+    
     return output;
 
   } catch (err) {
@@ -226,10 +379,10 @@ async function handleSlashCommand(text, userId, env) {
 
   switch (cmd) {
     case '/start':
-      return `🚀 *MFM Corporation AI — Online*\n\n20 agents active across 6 departments.\nType any instruction — I route it to the right specialist.\n\nType /help for all agents.`;
+      return `🚀 *MFM Corporation AI — Online*\n\n43 agents active across 6 departments.\nType any instruction — I route it to the right specialist.\nComplex questions auto-trigger a panel debate between agents.\n\nType /help for all agents and commands.`;
 
     case '/help':
-      return `🏢 *MFM Corporation — 20 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · mcp-llm-agent\n*CLO:* legal-advisor\n\n*Commands:* /status /tasks /metrics /team [name] /memo [text] /clear /query [question] /approve /reject`;
+      return `🏢 *MFM Corporation — 43 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent · strategic-planner\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent · development-advisor\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent · media-producer\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · innovation-analyst · mcp-llm-agent\n*CLO:* legal-advisor\n\n*Panel Debate* (agents argue for best answer):\n/panel strategy [question]\n/panel technical [question]\n/panel content [question]\n/panel innovation [question]\n/panel operations [question]\n/panel fullboard [question]\n_Complex questions auto-trigger a panel._\n\n*Commands:*\n/briefing — daily report (5 agents)\n/delegate [agent] [task] — direct to specific agent\n/status /tasks /metrics /team [name]\n/memo [text] /clear /query [q]\n/approve /reject /urgent\n/to [agent] /draft [agent] /follow [id]\n/cbstatus /panel`;
 
     case '/status':
       return await getStatusReport(env);
@@ -255,16 +408,20 @@ async function handleSlashCommand(text, userId, env) {
       if (!env.KV) return '⚠️ KV not configured.';
       const raw = await env.KV.get(`pending:${userId}`);
       if (!raw) return '⚠️ No pending action found. It may have expired (1h TTL).';
-      const { text: pendingText, agentName } = JSON.parse(raw);
+      const { text: pendingText, agentName, editCount, lastEdit } = JSON.parse(raw);
       await env.KV.delete(`pending:${userId}`);
       const AgentClass = AGENT_MAP[agentName];
       if (!AgentClass) return '⚠️ Agent not found for pending action.';
       const contextCard = await buildContextCard(agentName, env);
       const agentInst = new AgentClass();
-      const result = await agentInst.run(pendingText, userId, env, { contextCard });
+      let runText = pendingText;
+      if (editCount && editCount > 0) {
+        runText = pendingText + '\n\nAdditional instructions from CEO (edit #' + editCount + '): ' + lastEdit;
+      }
+      const result = await agentInst.run(runText, userId, env, { contextCard });
       const review = await reviewOutput(agentName, 'approved-action', result, env);
-      updateRoutingScore(agentName, review.score, env).catch(() => {});
-      return `✅ *Approved & Executed — [${agentName.replace(/-/g, ' ').toUpperCase()}]*\n\n${review.improved_response || result}`;
+      agentInst.finalizeScore(review.score, env).catch(() => {});
+      return '✅ *Approved & Executed — [' + agentName.replace(/-/g, ' ').toUpperCase() + ']* _(score: ' + review.score + '/100)_\n\n' + (review.improved_response || result);
     }
 
     case '/reject': {
@@ -275,12 +432,119 @@ async function handleSlashCommand(text, userId, env) {
       return '❌ Action cancelled and discarded.';
     }
 
+    case '/urgent': {
+      if (!args) return '⚠️ Usage: /urgent [task]\nExample: /urgent The website is down — fix it now';
+      return await routeMessage({ text: args, urgent: true }, userId, env);
+    }
+
+    case '/to': {
+      if (!args) return '⚠️ Usage: /to [agent-name] [task]\nExample: /to finance-planner What is the Q3 forecast?';
+      const spaceIdx2 = args.indexOf(' ');
+      const targetAgent = spaceIdx2 === -1 ? args : args.slice(0, spaceIdx2).trim();
+      const taskText = spaceIdx2 === -1 ? '' : args.slice(spaceIdx2 + 1).trim();
+      if (!taskText) return '⚠️ Usage: /to [agent-name] [task]\nExample: /to finance-planner What is the Q3 forecast?';
+      const AgentClass = AGENT_MAP[targetAgent];
+      if (!AgentClass) return '⚠️ Unknown agent: "' + targetAgent + '". Type /help for the list.';
+      const agent = new AgentClass();
+      const contextCard = await buildContextCard(targetAgent, env);
+      const rawResponse = await agent.run(taskText, userId, env, { contextCard });
+      const review = await reviewOutput(targetAgent, 'direct-command', rawResponse, env);
+      agent.finalizeScore(review.score, env).catch(() => {});
+      const header = '*[' + targetAgent.replace(/-/g, ' ').toUpperCase() + ']* _(score: ' + review.score + '/100)_\n\n';
+      return header + (review.improved_response || rawResponse);
+    }
+
+    case '/draft': {
+      if (!args) return '⚠️ Usage: /draft [agent-name] [task]\nExample: /draft social-media-agent Post about our new product';
+      const spaceIdx2 = args.indexOf(' ');
+      const targetAgent = spaceIdx2 === -1 ? args : args.slice(0, spaceIdx2).trim();
+      const taskText = spaceIdx2 === -1 ? '' : args.slice(spaceIdx2 + 1).trim();
+      if (!taskText) return '⚠️ Usage: /draft [agent-name] [task]';
+      const AgentClass = AGENT_MAP[targetAgent];
+      if (!AgentClass) return '⚠️ Unknown agent: "' + targetAgent + '".';
+      const agent = new AgentClass();
+      const contextCard = await buildContextCard(targetAgent, env);
+      const draft = await agent.run(taskText, userId, env, { contextCard, draftMode: true });
+      await env.KV.put(
+        'pending:' + userId,
+        JSON.stringify({ text: taskText, agentName: targetAgent, draftOutput: draft, isExplicitDraft: true, editCount: 0 }),
+        { expirationTtl: 3600 }
+      );
+      return '📋 *[DRAFT — ' + targetAgent.replace(/-/g, ' ').toUpperCase() + ']*\n\n' + draft + '\n\n---\n✅ Reply */approve* to execute  |  📝 Reply */edit [changes]* to refine  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_';
+    }
+
+    case '/edit': {
+      if (!env.KV) return '⚠️ KV not configured.';
+      if (!args) return '⚠️ Usage: /edit [your changes]\nExample: /edit Make the tone more formal';
+      const raw = await env.KV.get('pending:' + userId);
+      if (!raw) return '⚠️ No pending draft found. Use /draft first.';
+      const pending = JSON.parse(raw);
+      const AgentClass = AGENT_MAP[pending.agentName];
+      if (!AgentClass) return '⚠️ Agent not found.';
+      const editPrompt = 'Original task: "' + pending.text + '"\n\nCEO requested these changes: "' + args + '"\n\nPlease revise your previous response incorporating these changes.';
+      const agent = new AgentClass();
+      const contextCard = await buildContextCard(pending.agentName, env);
+      const revised = await agent.run(editPrompt, userId, env, { contextCard, draftMode: true });
+      await env.KV.put(
+        'pending:' + userId,
+        JSON.stringify({ ...pending, draftOutput: revised, editCount: (pending.editCount || 0) + 1, lastEdit: args }),
+        { expirationTtl: 3600 }
+      );
+      return '📋 *[REVISED DRAFT — ' + pending.agentName.replace(/-/g, ' ').toUpperCase() + ']* (edit #' + ((pending.editCount || 0) + 1) + ')\n\n' + revised + '\n\n---\n✅ */approve* to execute  |  📝 */edit [changes]* to refine again  |  ❌ */reject* to cancel';
+    }
+
+    case '/follow': {
+      if (!args) return '⚠️ Usage: /follow [task-id]\nExample: /follow abc123';
+      if (!env.db) return '⚠️ Database not available.';
+      const task = await env.db.prepare('SELECT * FROM tasks WHERE id = ?').bind(args).first();
+      if (!task) return '⚠️ Task "' + args + '" not found.';
+      const status = task.status === 'completed' ? '✅ Completed' : '⏳ Pending';
+      const score = task.quality_score ? ' _(score: ' + task.quality_score + '/100)_' : '';
+      return '📋 *Task Follow-up*\n\n*ID:* ' + task.id + '\n*Agent:* ' + task.agent + '\n*Status:* ' + status + score + '\n*Created:* ' + task.created_at + '\n*Input:* ' + (task.input || '').slice(0, 100) + '...\n*Output:* ' + (task.output || '').slice(0, 200) + '...';
+    }
+
     case '/query':
       if (!args) return '⚠️ Usage: /query [natural language question]\nExample: /query show me the top 5 agents by quality score this week';
       return await nl2sqlQuery(args, env);
 
+    case '/briefing':
+      return await getDailyBriefing(userId, env);
+
+    case '/delegate': {
+      if (!args) return `⚠️ Usage: /delegate [agent-name] [task]\nExample: /delegate market-analyst What is our best LinkedIn strategy for Q3?`;
+      const spIdx = args.indexOf(' ');
+      if (spIdx === -1) return `⚠️ Please include a task after the agent name.`;
+      const targetAgent = args.slice(0, spIdx).trim().toLowerCase();
+      const delegateTask = args.slice(spIdx + 1).trim();
+      const DelegateClass = AGENT_MAP[targetAgent];
+      if (!DelegateClass) return `⚠️ Unknown agent: *${targetAgent}*\nSee /help for available agents.`;
+      const delegateAgent = new DelegateClass();
+      const delegateCtx = await buildContextCard(targetAgent, env);
+      const delegateRaw = await delegateAgent.run(delegateTask, userId, env, { contextCard: delegateCtx });
+      const delegateReview = await reviewOutput(targetAgent, 'delegated', delegateRaw, env).catch(() => ({ score: 75, improved_response: null }));
+      delegateAgent.finalizeScore?.(delegateReview.score, env);
+      return `*[${targetAgent.replace(/-/g, ' ').toUpperCase()}]* _(score: ${delegateReview.score}/100)_\n\n${delegateReview.improved_response || delegateRaw}`;
+    }
+
+    case '/cbstatus':
+      return await getCircuitBreakerStatus(env);
+
+    case '/panel': {
+      if (!args) return `⚠️ Usage: /panel [strategy|technical|content|innovation|operations|fullboard] [question]
+Example: /panel strategy Should we enter the Johor market this quarter?`;
+      const parts = args.split(' ');
+      const panelKey = Object.keys(PANELS).find(k => k === parts[0]) || pickPanel(args);
+      const panelTask = parts[0] in PANELS ? parts.slice(1).join(' ') : args;
+      if (!panelTask.trim()) return `⚠️ Please include a question after the panel name.`;
+      const panel = PANELS[panelKey];
+      const panelAgents = panel.agentNames
+        .map(n => PANEL_AGENT_REGISTRY[n]?.())
+        .filter(Boolean);
+      return await runPanel(panelTask, panelAgents, userId, env);
+    }
+
     default:
-      return `❓ Unknown command: ${cmd}\nType /help for all commands.`;
+      return '❓ Unknown command: ' + cmd + '\nType /help for all commands.';
   }
 }
 
@@ -321,17 +585,16 @@ async function getMetricsReport(env) {
 
   const byAgent = {};
   for (const m of metrics) {
-    if (!byAgent[m.agent]) byAgent[m.agent] = { tasks: 0, totalScore: 0, totalMs: 0, days: 0 };
+    if (!byAgent[m.agent]) byAgent[m.agent] = { tasks: 0, totalScore: 0, totalMs: 0 };
     byAgent[m.agent].tasks += m.tasks_completed || 0;
-    byAgent[m.agent].totalScore += m.avg_quality_score || 0;
-    byAgent[m.agent].totalMs += m.avg_response_ms || 0;
-    byAgent[m.agent].days++;
+    byAgent[m.agent].totalScore += (m.avg_quality_score || 0) * (m.tasks_completed || 0);
+    byAgent[m.agent].totalMs += (m.avg_response_ms || 0) * (m.tasks_completed || 0);
   }
 
   const lines = Object.entries(byAgent)
     .map(([agent, s]) => {
-      const avgScore = s.days ? Math.round(s.totalScore / s.days) : 0;
-      const avgMs = s.days ? Math.round(s.totalMs / s.days) : 0;
+      const avgScore = s.tasks ? Math.round(s.totalScore / s.tasks) : 0;
+      const avgMs = s.tasks ? Math.round(s.totalMs / s.tasks) : 0;
       return `• *${agent}* — ${s.tasks} tasks · avg score ${avgScore}/100 · avg ${avgMs}ms`;
     })
     .join('\n');
@@ -358,6 +621,50 @@ async function broadcastMemo(memoText, userId, env) {
   const prompt = `Draft a professional internal broadcast memo from CEO Remy to all department heads with this message: "${memoText}". Format it as a proper business memo.`;
   const draft = await writer.run(prompt, userId, env);
   return `📢 *Memo Drafted*\n\n${draft}\n\n_Send /memo [text] again after review to regenerate, or forward this directly._`;
+}
+
+async function getDailyBriefing(userId, env) {
+  const myt = new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur', dateStyle: 'medium', timeStyle: 'short' });
+
+  const briefingAgents = [
+    { name: 'ops-coordinator',  AgentClass: OpsCoordinator,  prompt: 'Daily operations briefing: what tasks are running, any blockers, team status summary. Keep it to 3 bullet points.' },
+    { name: 'market-analyst',   AgentClass: MarketAnalyst,   prompt: 'Today\'s Malaysia AI market briefing: one key trend, one competitor move, one opportunity. 3 bullet points max.' },
+    { name: 'finance-planner',  AgentClass: FinancePlanner,  prompt: 'Financial snapshot: MFM Year 1 progress vs MYR 60K-120K target, current burn (zero-cost infra), one financial risk. 3 bullet points.' },
+    { name: 'risk-assessor',    AgentClass: RiskAssessor,    prompt: 'Top 3 risks facing MFM Corporation today: one operational, one market, one technical. One sentence each.' },
+    { name: 'trend-spotter',    AgentClass: TrendSpotter,    prompt: 'One AI or market signal CEO Remy must know about today. One paragraph, specific and actionable.' },
+  ];
+
+  const results = await Promise.allSettled(
+    briefingAgents.map(async ({ name, AgentClass, prompt }) => {
+      const agent = new AgentClass();
+      const ctx = await buildContextCard(name, env).catch(() => '');
+      const out = await agent.run(prompt, userId, env, { contextCard: ctx });
+      return { name, out };
+    })
+  );
+
+  const sections = results.map((r, i) => {
+    const { name } = briefingAgents[i];
+    const label = name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const content = r.status === 'fulfilled' ? r.value.out : `⚠️ Unavailable`;
+    return `*${label}*\n${content}`;
+  });
+
+  return `📰 *MFM Corporation — Daily Briefing*\n_${myt}_\n\n${sections.join('\n\n---\n\n')}`;
+}
+
+async function getCircuitBreakerStatus(env) {
+  const providers = ['cerebras', 'openrouter'];
+  const lines = await Promise.all(providers.map(async p => {
+    const cb = new CircuitBreaker(`llm:${p}`, env.KV);
+    const status = await cb.getStatus();
+    const icon = status.open ? '🔴' : '🟢';
+    const detail = status.open
+      ? ` — OPEN (${Math.round(status.cooldownRemaining)}s until reset, ${status.failures} failures)`
+      : ` — OK (${status.failures} failure(s) recorded)`;
+    return `${icon} *${p}*${detail}`;
+  }));
+  return `⚡ *Circuit Breaker Status*\n\n${lines.join('\n')}\n\n_Open = provider temporarily bypassed. Resets after 60s._`;
 }
 
 async function handleDirect(text, userId, env) {

@@ -1,0 +1,264 @@
+{
+  "timestamp": "2026-05-24T14:18:39.168Z",
+  "url": "https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev",
+  "summary": {
+    "total": 42,
+    "passed": 42,
+    "failed": 0,
+    "pct": 100
+  },
+  "scores": [
+    {
+      "name": "ops-coordinator",
+      "score": 100,
+      "response": "*[OPS COORDINATOR]* _(score: 95/100)_\n\n**Current Situation Assessment**  \n- The CEO (Remy) is reviewing research deliverables from the research‑agent and has just received “the files.”  \n- Ongoing pro",
+      "ms": 45609
+    },
+    {
+      "name": "quality-ops-reviewer",
+      "score": 100,
+      "response": "*[QUALITY OPS REVIEWER]* _(score: 85/100)_\n\n**1. Quality Score:** **12/100**\n\n**2. Strengths**\n- The sentence is concise and grammatically correct.\n- It conveys a clear intent (the desire to increase ",
+      "ms": 20668
+    },
+    {
+      "name": "process-optimizer",
+      "score": 100,
+      "response": "*[PROCESS OPTIMIZER]* _(score: 95/100)_\n\n**Daily Workflow Optimization for a Solo Founder + AI Agents**  \n*(MFM Corporation – AI‑agent & social‑media services)*  \n\n---\n\n## 1. Current State Analysis  \n",
+      "ms": 90639
+    },
+    {
+      "name": "data-governance-agent",
+      "score": 100,
+      "response": "*[DATA GOVERNANCE AGENT]* _(score: 92/100)_\n\n**PDPA Malaysia Compliance Overview for AI Companies (e.g., MFM Corporation)**  \n\nBelow is a concise, actionable framework that maps the Personal Data Prot",
+      "ms": 97188
+    },
+    {
+      "name": "strategic-planner",
+      "score": 100,
+      "response": "*[STRATEGIC PLANNER]* _(score: 96/100)_\n\n**MFM Corporation – 30‑Day Revenue Acceleration Plan**  \n*Goal: Reach MYR 100 000 in net revenue by the end of the next 30 calendar days (approximately ≈ MYR 3",
+      "ms": 112186
+    },
+    {
+      "name": "meeting-scheduler",
+      "score": 100,
+      "response": "*[MEETING SCHEDULER]* _(score: 85/100)_\n\n[TOOL:calendar-free-slot|{\"durationMinutes\":60,\"withinDays\":7}]",
+      "ms": 43138
+    },
+    {
+      "name": "reporting-analyst",
+      "score": 100,
+      "response": "*[REPORTING ANALYST]* _(score: 93/100)_\n\n**Weekly Operations Report – 17 May 2026 to 23 May 2026**  \n\n- **Executive Summary:** • Research‑agent remains top performer (82/100) delivering 27 % more insi",
+      "ms": 24910
+    },
+    {
+      "name": "project-manager",
+      "score": 100,
+      "response": "*[PROJECT MANAGER]* _(score: 96/100)_\n\n**Project Brief – Build Client Website**  \n*Project Owner: COO (overall delivery); Primary Execution Lead: CTO (technical build); UI/UX Lead: CMO; Finance oversi",
+      "ms": 75327
+    },
+    {
+      "name": "notification-manager",
+      "score": 100,
+      "response": "*[NOTIFICATION MANAGER]* _(score: 95/100)_\n\n**Classification:** 🚨 CRITICAL – System downtime  \n\n**Channels to use:** SMS (to CEO Remy), Slack (internal #alerts channel), Email (team distribution)\n\n--",
+      "ms": 33587
+    },
+    {
+      "name": "google-drive-agent",
+      "score": 100,
+      "response": "*[GOOGLE DRIVE AGENT]* _(score: 85/100)_\n\nI’m unable to list the contents of the MFM Google Drive at the moment because the required service credentials (GOOGLE_SERVICE_ACCOUNT_KEY) are not configured",
+      "ms": 15810
+    },
+    {
+      "name": "analytics-reporter",
+      "score": 100,
+      "response": "*[ANALYTICS REPORTER]* _(score: 95/100)_\n\n## Core Metrics to Track for Agent Performance  \n\n| Metric | What It Measures | Target / Benchmark (MFM 2026) | Why It Matters | How to Capture it (D1 tables ",
+      "ms": 61055
+    },
+    {
+      "name": "pdf-generator",
+      "score": 100,
+      "response": "*[PDF GENERATOR]* _(score: 96/100)_\n\nBelow is a **ready‑to‑use structure** for a **Monthly Report** that you can feed directly into the PDF‑generator tool.  \nThe layout follows MFM Corporation’s brand",
+      "ms": 77449
+    },
+    {
+      "name": "quality-control-manager",
+      "score": 100,
+      "response": "*[QUALITY CONTROL MANAGER]* _(score: 93/100)_\n\n**Process Audit – “We send emails manually”**  \n\n| **Audit Dimension** | **Score (0‑100)** | **Rationale** |\n|---------------------|-------------------|-",
+      "ms": 75039
+    },
+    {
+      "name": "tech-advisor",
+      "score": 100,
+      "response": "*[TECH ADVISOR]* _(score: 95/100)_\n\n### 1. Direct Recommendation – Tech Stack for a Real‑Time Dashboard  \n\n| Layer | Recommended Service / Library | Why it fits MFM’s constraints (free‑tier, low‑ops, ",
+      "ms": 105921
+    },
+    {
+      "name": "devops-monitor",
+      "score": 100,
+      "response": "*[DEVOPS MONITOR]* _(score: 93/100)_\n\n## Cloudflare Workers Health‑Monitoring Guide  \n*(Tailored for MFM’s zero‑cost, Cloudflare‑Workers‑only stack)*  \n\n---\n\n### 1️⃣ What “healthy” means for a Worker\n",
+      "ms": 83334
+    },
+    {
+      "name": "security-auditor",
+      "score": 100,
+      "response": "*[SECURITY AUDITOR]* _(score: 95/100)_\n\n**MFM Corporation – Security Audit**  \n**Topic:** Storing API keys in Cloudflare KV (Key‑Value Store)  \n\n---\n\n## 1. Threat Assessment  \n\n| Threat | Likelihood |",
+      "ms": 112998
+    },
+    {
+      "name": "integration-agent",
+      "score": 100,
+      "response": "*[INTEGRATION AGENT]* _(score: 95/100)_\n\nBelow is a complete, Cloudflare‑Workers‑ready blueprint for wiring **your own API** (the one you already run inside a Worker) to a **Telegram Bot**.  \nIt follo",
+      "ms": 115927
+    },
+    {
+      "name": "development-advisor",
+      "score": 100,
+      "response": "*[DEVELOPMENT ADVISOR]* _(score: 95/100)_\n\n**Panel Consensus – React vs. Vue for the MFM dashboard**\n\nBelow is a structured recommendation from each specialist on the core question *“Should I use Reac",
+      "ms": 103343
+    },
+    {
+      "name": "frontend-developer",
+      "score": 100,
+      "response": "*[FRONTEND DEVELOPER]* _(score: 96/100)_\n\n**Task:** Build a reusable, mobile‑first **TaskList** component that can be dropped into any MFM dashboard page.  \nIt will:\n\n* Render a list of tasks (title, ",
+      "ms": 81273
+    },
+    {
+      "name": "backend-developer",
+      "score": 100,
+      "response": "*[BACKEND DEVELOPER]* _(score: 96/100)_\n\nBelow is a **complete design package** for a **`POST /api/v1/tasks`** endpoint that creates a new task for a logged‑in user.  \nAll code follows the MFM convent",
+      "ms": 119349
+    },
+    {
+      "name": "qa-engineer",
+      "score": 100,
+      "response": "*[QA ENGINEER]* _(score: 95/100)_\n\nBelow is a **complete QA package** for the **`web-fetch`** utility that the MFM code‑base uses to pull remote HTML/JSON from a URL inside a Cloudflare Worker (or any",
+      "ms": 139699
+    },
+    {
+      "name": "database-specialist",
+      "score": 100,
+      "response": "*[DATABASE SPECIALIST]* _(score: 95/100)_\n\nBelow is a **complete D1‑SQLite design** for persisting every conversation that an AI agent has with a user (or with another agent).  \nThe model is deliberat",
+      "ms": 182729
+    },
+    {
+      "name": "cloud-engineer",
+      "score": 100,
+      "response": "*[CLOUD ENGINEER]* _(score: 95/100)_\n\n## 1️⃣ Requirement – What “staying within the free tier” really means  \n\n| Free‑tier limit (per month) | What you have to watch | Why it matters for MFM |\n|------",
+      "ms": 124322
+    },
+    {
+      "name": "content-writer",
+      "score": 100,
+      "response": "*[CONTENT WRITER]* _(score: 95/100)_\n\n**[Facebook Post – MFM Corporation]**\n\n🚀 **Ready to Future‑Proof Your SME?**  \n\n**Hook:**  *“Did you know 78% of Malaysian SMEs that adopted AI automation saw a ",
+      "ms": 42623
+    },
+    {
+      "name": "market-analyst",
+      "score": 100,
+      "response": "*[MARKET ANALYST]* _(score: 75/100)_\n\n[TOOL:exa-search|{\"query\":\"Malaysia AI market size 2026 forecast\",\"numResults\":5}]",
+      "ms": 34843
+    },
+    {
+      "name": "customer-success-agent",
+      "score": 100,
+      "response": "*[CUSTOMER SUCCESS AGENT]* _(score: 92/100)_\n\n**1. Client Situation**  \nYou’re looking for a clear, step‑by‑step process to bring a new corporate client onto MFM’s AI‑agent and social‑media‑management",
+      "ms": 70069
+    },
+    {
+      "name": "social-media-agent",
+      "score": 100,
+      "response": "*[SOCIAL MEDIA AGENT]* _(score: 85/100)_\n\n**Instagram Caption (draft):**  \n\n🚀 Introducing the next‑gen AI Agent from MFM Corp!  \nTurn repetitive tasks into effortless automation, boost productivity, ",
+      "ms": 16706
+    },
+    {
+      "name": "media-producer",
+      "score": 100,
+      "response": "*[MEDIA PRODUCER]* _(score: 96/100)_\n\n**🟣 Media Director (Strategy)**  \n**Format Recommendation:** **60‑second TikTok (vertical, fast‑paced, music‑driven).**  \nWhy? TikTok is the #1 discovery channel",
+      "ms": 65228
+    },
+    {
+      "name": "email-marketing-agent",
+      "score": 100,
+      "response": "*[EMAIL MARKETING AGENT]* _(score: 95/100)_\n\n**Campaign Objective**  \nGenerate qualified leads from Malaysian SME owners/managers for MFM Corporation’s AI‑agent & social‑media automation services.\n\n**",
+      "ms": 57977
+    },
+    {
+      "name": "finance-planner",
+      "score": 100,
+      "response": "*[FINANCE PLANNER]* _(score: 92/100)_\n\n## MFM Corporation – Q3 2024 Budget (July 1 – Sept 30 2024)  \n**Revenue Target:** **MYR 80,000** (≈ MYR 26,667 per month)  \n\n| **Category** | **Assumptions** | *",
+      "ms": 54813
+    },
+    {
+      "name": "risk-assessor",
+      "score": 100,
+      "response": "*[RISK ASSESSOR]* _(score: 85/100)_\n\n### Top 3 Risks for MFM Corporation (May 2026)\n\n| # | Risk Category | Core Description |\n|---|---------------|-------------------|\n| 1 | **Operational – Compliance",
+      "ms": 21540
+    },
+    {
+      "name": "grant-tracker",
+      "score": 100,
+      "response": "*[GRANT TRACKER]* _(score: 95/100)_\n\n[TOOL:brave-search|{\"query\":\"Malaysian AI startup grant 2024 2025\", \"count\":10}][TOOL:brave-search|{\"query\":\"AI startup grant Malaysia 2024\", \"count\":10}]**🗂️ Qui",
+      "ms": 201715
+    },
+    {
+      "name": "revenue-analyst",
+      "score": 100,
+      "response": "*[REVENUE ANALYST]* _(score: 96/100)_\n\n### Projecting MRR (Monthly Recurring Revenue) for a SaaS Product  \n\nBelow is a step‑by‑step framework you can use every month to forecast **MRR** when you have ",
+      "ms": 101626
+    },
+    {
+      "name": "research-agent",
+      "score": 100,
+      "response": "*[RESEARCH AGENT]* _(score: 45/100)_\n\n**Executive Summary**\nBased on Q1‑Q3 2026 market reports, analyst rankings, and user‑review data, the three AI‑automation platforms most frequently cited as top c",
+      "ms": 104484
+    },
+    {
+      "name": "idea-generator",
+      "score": 100,
+      "response": "*[IDEA GENERATOR]* _(score: 92/100)_\n\n**1. Name:** **BizPulse AI – “Instant KPI Dashboard for SMEs”**  \n**Concept:** A plug‑and‑play AI agent that connects to a shop’s POS, accounting software (Xero, ",
+      "ms": 62701
+    },
+    {
+      "name": "trend-spotter",
+      "score": 100,
+      "response": "*[TREND SPOTTER]* _(score: 92/100)_\n\n[TOOL:brave-search|{\"query\":\"AI agent plug‑in ecosystems week May 2026\", \"count\":5}]**Top 3 Emerging Tech Trends (Week of 24 May 2026)**  \n\n| # | Trend | Maturity*",
+      "ms": 79892
+    },
+    {
+      "name": "innovation-coach",
+      "score": 100,
+      "response": "*[INNOVATION COACH]* _(score: 45/100)_\n\nTo move forward with an AI‑powered meeting‑notes solution for SEA SME customers, consider the following actionable steps:\n\n1. **Identify the Core Pain Point**\n ",
+      "ms": 32689
+    },
+    {
+      "name": "innovation-analyst",
+      "score": 100,
+      "response": "*[INNOVATION ANALYST]* _(score: 95/100)_\n\n**MFM Corporation – Competitive Landscape Brief: AI‑Agents in Southeast Asia (as of May 2026)**  \n\nBelow is a rapid‑fire panel debrief that you can paste into",
+      "ms": 145131
+    },
+    {
+      "name": "mcp-llm-agent",
+      "score": 100,
+      "response": "*[MCP LLM AGENT]* _(score: 95/100)_\n\n**1. Model/Tool Overview**\n\n| Model | Provider | Pricing (approx. 2026) | Key Capabilities for Coding |\n|-------|----------|------------------------|--------------",
+      "ms": 63797
+    },
+    {
+      "name": "technology-tracker",
+      "score": 100,
+      "response": "*[TECHNOLOGY TRACKER]* _(score: 45/100)_\n\nSure, I’ve gathered the latest AI tools launched in May 2025:\n\n1. **VisionaryAI Studio** – A generative image and video platform that uses diffusion models fo",
+      "ms": 53695
+    },
+    {
+      "name": "data-analyst",
+      "score": 100,
+      "response": "*[DATA ANALYST]* _(score: 96/100)_\n\nBelow is a **ready‑to‑run playbook** you can hand to any analyst (or run yourself in your SQL console) that walks through the whole end‑to‑end workflow for analysin",
+      "ms": 164744
+    },
+    {
+      "name": "legal-advisor",
+      "score": 100,
+      "response": "*[LEGAL ADVISOR]* _(score: 95/100)_\n\n**1. Legal Issue**  \nDetermine the most appropriate legal structure for MFM Corporation – whether to incorporate as a private limited company (Sdn. Bhd.) or operat",
+      "ms": 46879
+    }
+  ]
+}
