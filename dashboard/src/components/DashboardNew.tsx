@@ -40,17 +40,73 @@ const MOCK_LOGS: LogEntry[] = [
   { time: '14:21:40.01', id: 'CS-004', op: 'wait_for_trigger', status: 'IDLE', lat: '--' }
 ];
 
+const WORKER = 'https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev';
+
+async function verifySecret(secret: string): Promise<boolean> {
+  try {
+    const r = await fetch(`${WORKER}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${secret}` },
+      body: JSON.stringify({ text: 'ping' }),
+    });
+    return r.status !== 401 && r.status !== 403;
+  } catch { return false; }
+}
+
+function LoginGate({ onAuth }: { onAuth: () => void }) {
+  const [secret, setSecret] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!secret.trim()) return;
+    setLoading(true); setError('');
+    const ok = await verifySecret(secret.trim());
+    if (ok) { localStorage.setItem('mfm_secret', secret.trim()); onAuth(); }
+    else { setError('Incorrect secret. Try again.'); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: '#0a0f1e', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+      <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '1rem', padding: '2.5rem 2rem', width: '100%', maxWidth: 380, textAlign: 'center' }}>
+        <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f3f4f6', marginBottom: '.25rem' }}>MFM <span style={{ color: '#6366f1' }}>Corp</span></div>
+        <div style={{ fontSize: '.8rem', color: '#6b7280', marginBottom: '2rem' }}>CEO Command Center</div>
+        <input
+          type="password" placeholder="Dashboard secret…" value={secret}
+          onChange={e => setSecret(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleLogin()}
+          style={{ width: '100%', background: '#0a0f1e', border: '1px solid #1f2937', borderRadius: '.5rem', padding: '.75rem 1rem', color: '#f3f4f6', fontSize: '.95rem', outline: 'none', marginBottom: '.75rem', boxSizing: 'border-box' }}
+        />
+        <button onClick={handleLogin} disabled={loading}
+          style={{ width: '100%', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '.5rem', padding: '.75rem', fontSize: '.95rem', fontWeight: 600, cursor: 'pointer' }}>
+          {loading ? 'Checking…' : 'Sign In'}
+        </button>
+        {error && <div style={{ color: '#ef4444', fontSize: '.8rem', marginTop: '.75rem' }}>{error}</div>}
+      </div>
+    </div>
+  );
+}
+
 export function DashboardNew() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [agents, setAgents] = useState<Agent[]>(MOCK_AGENTS);
   const [logs] = useState<LogEntry[]>(MOCK_LOGS);
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('mfm:theme') as 'dark' | 'light' || 'dark';
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
+
+    const saved = localStorage.getItem('mfm_secret');
+    if (!saved) { setAuthed(false); return; }
+    verifySecret(saved).then(ok => {
+      if (ok) setAuthed(true);
+      else { localStorage.removeItem('mfm_secret'); setAuthed(false); }
+    });
   }, []);
 
   const toggleTheme = () => {
@@ -99,6 +155,9 @@ export function DashboardNew() {
       ]
     }
   ];
+
+  if (authed === null) return <div style={{ background: '#0a0f1e', minHeight: '100vh' }} />;
+  if (!authed) return <LoginGate onAuth={() => setAuthed(true)} />;
 
   return (
     <>
