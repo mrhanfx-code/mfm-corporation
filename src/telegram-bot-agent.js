@@ -228,12 +228,6 @@ export default {
       return new Response('OK');
     }
 
-    const cors = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    };
-
     // Serve files from R2
     if (url.pathname.startsWith('/file/')) {
       const key = url.pathname.slice(6); // remove '/file/'
