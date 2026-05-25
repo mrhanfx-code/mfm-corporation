@@ -224,6 +224,24 @@ export default {
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
     };
 
+    // Serve files from R2
+    if (url.pathname.startsWith('/file/')) {
+      const key = url.pathname.slice(6); // remove '/file/'
+      const bucket = env['mfm-corporation-uploads'];
+      if (!bucket) return new Response('Not found', { status: 404 });
+      const object = await bucket.get(key);
+      if (!object) return new Response('Not found', { status: 404 });
+      const filename = key.split('/').pop();
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Cache-Control': 'public, max-age=86400',
+          'Access-Control-Allow-Origin': '*',
+        }
+      });
+    }
+
     if (url.pathname === '/relay') {
       if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
       if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: cors });
@@ -235,6 +253,38 @@ export default {
       const ceoId = (env.AUTHORIZED_USER_IDS || '').split(',')[0].trim();
       await sendTelegramMessage(ceoId, body.text, env);
       return new Response(JSON.stringify({ ok: true }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    // File upload endpoint — stores in R2, returns URL
+    if (url.pathname === '/upload') {
+      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+      if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: cors });
+      const token = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim();
+      if (token !== env.DASHBOARD_SECRET) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const bucket = env['mfm-corporation-uploads'];
+      if (!bucket) {
+        return new Response(JSON.stringify({ error: 'R2 not configured' }), { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      let formData;
+      try { formData = await request.formData(); } catch {
+        return new Response(JSON.stringify({ error: 'Expected multipart/form-data' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const file = formData.get('file');
+      if (!file || typeof file === 'string') {
+        return new Response(JSON.stringify({ error: 'No file provided' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        return new Response(JSON.stringify({ error: 'File too large. Max 10MB.' }), { status: 413, headers: { ...cors, 'Content-Type': 'application/json' } });
+      }
+      const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin';
+      const fileId = crypto.randomUUID();
+      const key = `uploads/${fileId}.${ext}`;
+      await bucket.put(key, file.stream(), { httpMetadata: { contentType: file.type || 'application/octet-stream' } });
+      const file_url = `${url.protocol}//${url.host}/file/${key}`;
+      return new Response(JSON.stringify({ file_url, file_name: file.name, file_type: file.type, size: file.size }),
+        { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
     if (url.pathname === '/ask') {
@@ -264,16 +314,36 @@ export default {
       try { body = await request.json(); } catch {
         return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
-      if (!body?.text?.trim()) {
-        return new Response(JSON.stringify({ error: 'Missing text' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+      if (!body?.text?.trim() && !body?.file_url) {
+        return new Response(JSON.stringify({ error: 'Missing text or file' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
-      if (body.text.length > 4000) {
+      const inputText = (body.text || '').trim();
+      if (inputText.length > 4000) {
         return new Response(JSON.stringify({ error: 'Input too long. Max 4000 characters.' }),
           { status: 413, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
+      // Build message context — include file info if present
+      let messageText = inputText;
+      if (body.file_url) {
+        messageText += `\n\n[User shared a file: ${body.file_name || 'file'} — ${body.file_url}]`;
+      }
       const ceoId = (env.AUTHORIZED_USER_IDS || '').split(',')[0].trim();
-      const reply = await routeMessage({ text: body.text.trim() }, ceoId, env);
-      return new Response(JSON.stringify({ response: reply || 'No response.' }),
+      const reply = await routeMessage({ text: messageText || `[File shared: ${body.file_name}]` }, ceoId, env);
+
+      // If reply is long (report), save to R2 and return attachment
+      let attachment = null;
+      const bucket = env['mfm-corporation-uploads'];
+      if (reply && reply.length > 1500 && bucket) {
+        try {
+          const reportId = crypto.randomUUID();
+          const key = `reports/${reportId}.md`;
+          await bucket.put(key, reply, { httpMetadata: { contentType: 'text/markdown' } });
+          const reportUrl = `${url.protocol}//${url.host}/file/${key}`;
+          attachment = { url: reportUrl, name: 'report.md', type: 'text/markdown' };
+        } catch { /* non-fatal */ }
+      }
+
+      return new Response(JSON.stringify({ response: reply || 'No response.', attachment }),
         { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 

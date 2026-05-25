@@ -10,6 +10,11 @@ interface Message {
     url: string;
     type: string;
   };
+  attachment?: {
+    url: string;
+    name: string;
+    type: string;
+  };
 }
 
 interface ChatWindowProps {
@@ -65,13 +70,35 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
       const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'https://mfm-corporation-telegram-bot.muhdfarihan.workers.dev';
       const DASHBOARD_SECRET = import.meta.env.VITE_DASHBOARD_SECRET || '';
 
+      // Step 1: Upload file to R2 if present
+      let file_url: string | null = null;
+      let file_name: string | null = null;
+      if (uploadedFile) {
+        const form = new FormData();
+        form.append('file', uploadedFile);
+        const uploadRes = await fetch(`${WORKER_URL}/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${DASHBOARD_SECRET}` },
+          body: form
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          file_url = uploadData.file_url;
+          file_name = uploadData.file_name;
+        }
+      }
+
+      // Step 2: Send message + optional file_url to /ask
       const res = await fetch(`${WORKER_URL}/ask`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${DASHBOARD_SECRET}`
         },
-        body: JSON.stringify({ text: inputText || `[File shared: ${uploadedFile?.name}]` })
+        body: JSON.stringify({
+          text: inputText || `Please review the file I just sent.`,
+          ...(file_url && { file_url, file_name })
+        })
       });
 
       const data = await res.json();
@@ -79,7 +106,8 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
         id: (Date.now() + 1).toString(),
         sender: 'ceo',
         text: res.ok ? (data.response || 'No response.') : `Error: ${data.error || 'Request failed'}`,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        attachment: data.attachment || undefined
       };
       setMessages(prev => [...prev, response]);
     } catch {
@@ -215,6 +243,28 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
                 </div>
               )}
               {message.text}
+              {message.attachment && (
+                <div style={{ marginTop: '10px', padding: '8px 12px', background: 'rgba(0,0,0,0.15)', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>
+                    {message.attachment.type?.startsWith('image/') ? '🖼️' : message.attachment.type === 'text/markdown' ? '📄' : '📎'}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {message.attachment.name}
+                    </div>
+                    <div style={{ fontSize: '11px', opacity: 0.7 }}>Click to download</div>
+                  </div>
+                  <a
+                    href={message.attachment.url}
+                    download={message.attachment.name}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ padding: '4px 10px', background: 'var(--accent)', color: 'oklch(20% 0.02 255)', borderRadius: '6px', fontSize: '11px', fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}
+                  >
+                    Download
+                  </a>
+                </div>
+              )}
             </div>
             <span style={{ fontSize: '10px', color: 'var(--muted)' }}>
               {new Date(message.timestamp).toLocaleTimeString()}
