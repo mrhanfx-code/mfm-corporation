@@ -44,6 +44,10 @@ database_id = "91e8699c-2731-4f0d-8a09-9f9765e7e4cc"
 binding = "mfm-corporation-uploads"
 bucket_name = "mfm-corporation-uploads"
 
+# Cloudflare Workers AI — image generation (free tier: 10,000 neurons/day)
+[ai]
+binding = "AI"
+
 # Cloudflare Queue — async tasks >5s (e.g. long research, batch content)
 [[queues.producers]]
 binding  = "TASK_QUEUE"

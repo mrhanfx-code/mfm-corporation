@@ -54,6 +54,8 @@ import { McpLlmAgent } from '../agents/cino/mcp-llm-agent.js';
 import { TechnologyTracker } from '../agents/cino/technology-tracker.js';
 import { DataAnalyst } from '../agents/cino/data-analyst.js';
 import { LegalAdvisor } from '../agents/clo/legal-advisor.js';
+import { generateImage, formatImageResponse } from '../tools/image-tool.js';
+import { createRepo, pushFile, pushMultipleFiles, listRepos, triggerWorkflow } from '../tools/github-tool.js';
 
 const ORCHESTRATOR_MODEL = MODELS.CEREBRAS_FAST;
 
@@ -122,7 +124,11 @@ Routing rules:
 - cino/technology-tracker: monitor new AI tools, frameworks, LLMs, platforms for MFM competitive edge
 - cino/data-analyst: statistical analysis, D1 data interpretation, forecasting, anomaly detection
 - clo/legal-advisor: contracts, legal compliance, regulations, Malaysian law, IP, employment law, corporate governance, disputes, PDPA, SSM, Bank Negara, legal risk, NDA, terms of service
-- direct: greetings, slash commands (/start, /help, /status, /tasks, /metrics, /team, /memo, /clear)`;
+- direct: greetings, slash commands (/start, /help, /status, /tasks, /metrics, /team, /memo, /clear)
+
+SPECIAL CAPABILITIES (handled automatically before agent routing):
+- Image generation: triggered by keywords like "generate image", "create image", "image of X", "picture of X" — uses Cloudflare Workers AI (Flux model, free)
+- GitHub operations: "create repo named X", "list my repos" — uses GitHub API (free tier)`;
 
 const PARALLEL_ROUTES = {
   'product-launch':   ['market-analyst', 'finance-planner', 'ops-coordinator'],
@@ -270,6 +276,36 @@ export async function routeMessage(message, userId, env) {
     return await handleSlashCommand(text, userId, env);
   }
 
+  // ── Image generation intercept ──
+  const imgKeywords = ['generate image', 'create image', 'make image', 'draw image', 'generate a picture', 'create a picture', 'generate picture', 'make a picture', 'generate photo', 'create photo', 'image of ', 'picture of ', 'illustration of ', 'generate an image', 'create an image'];
+  const lowerText = text.toLowerCase();
+  if (imgKeywords.some(k => lowerText.includes(k))) {
+    const prompt = text.replace(/^(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|illustration)\s+(of\s+)?/i, '').trim() || text;
+    const result = await generateImage(prompt, env);
+    if (result.error) return `⚠️ Image generation failed: ${result.error}`;
+    const workerHost = `mfm-corporation-telegram-bot.mrhan-fx.workers.dev`;
+    const formatted = formatImageResponse(result, workerHost);
+    return typeof formatted === 'string' ? formatted : formatted.text;
+  }
+
+  // ── GitHub / code creation intercept ──
+  const ghCreateRepo = /create\s+(a\s+)?(new\s+)?repo(sitory)?\s+(?:named?\s+|called?\s+)?([\w-]+)/i.exec(text);
+  if (ghCreateRepo) {
+    const repoName = ghCreateRepo[4];
+    const desc = text.replace(ghCreateRepo[0], '').trim() || '';
+    const result = await createRepo(repoName, desc, env);
+    if (result.error) return `⚠️ GitHub error: ${result.error}`;
+    return `✅ *Repository created!*\n\n📁 **Name:** ${result.name}\n🔗 **URL:** ${result.url}\n🔒 Private: yes\n\nYou can now ask me to push code files to it.`;
+  }
+
+  const ghListRepos = /(list|show|what are)\s+(my\s+)?(github\s+)?repos(itories)?/i.test(text);
+  if (ghListRepos) {
+    const result = await listRepos(env);
+    if (result.error) return `⚠️ GitHub error: ${result.error}`;
+    const repoList = result.repos.slice(0, 15).map(r => `• [${r.name}](${r.url}) ${r.private ? '🔒' : '🌐'}`).join('\n');
+    return `📁 *Your GitHub Repositories (${result.repos.length}):*\n\n${repoList}`;
+  }
+
   const parallelKey = detectParallelIntent(text);
   if (parallelKey) {
     return await runParallelAgents(PARALLEL_ROUTES[parallelKey], text, userId, env);
@@ -383,6 +419,33 @@ async function handleSlashCommand(text, userId, env) {
 
     case '/help':
       return `🏢 *MFM Corporation — 43 Agents*\n\n*COO:* ops-coordinator · quality-ops-reviewer · process-optimizer · data-governance-agent · strategic-planner\n*CTO:* tech-advisor · devops-monitor · security-auditor · integration-agent · development-advisor\n*CMO:* content-writer · market-analyst · customer-success-agent · social-media-agent · media-producer\n*CFO:* finance-planner · risk-assessor\n*CINO:* research-agent · idea-generator · trend-spotter · innovation-coach · innovation-analyst · mcp-llm-agent\n*CLO:* legal-advisor\n\n*Panel Debate* (agents argue for best answer):\n/panel strategy [question]\n/panel technical [question]\n/panel content [question]\n/panel innovation [question]\n/panel operations [question]\n/panel fullboard [question]\n_Complex questions auto-trigger a panel._\n\n*Commands:*\n/briefing — daily report (5 agents)\n/delegate [agent] [task] — direct to specific agent\n/status /tasks /metrics /team [name]\n/memo [text] /clear /query [q]\n/approve /reject /urgent\n/to [agent] /draft [agent] /follow [id]\n/cbstatus /panel`;
+
+    case '/image': {
+      if (!args) return `Usage: /image [prompt]\nExample: /image a futuristic office building in Kuala Lumpur`;
+      const imgResult = await generateImage(args, env);
+      if (imgResult.error) return `⚠️ ${imgResult.error}`;
+      const formatted = formatImageResponse(imgResult, 'mfm-corporation-telegram-bot.mrhan-fx.workers.dev');
+      return typeof formatted === 'string' ? formatted : formatted.text;
+    }
+
+    case '/github': {
+      const sub = args.split(' ')[0];
+      const rest = args.slice(sub.length).trim();
+      if (sub === 'repos') {
+        const r = await listRepos(env);
+        if (r.error) return `⚠️ ${r.error}`;
+        return `📁 *Repos (${r.repos.length}):*\n` + r.repos.slice(0, 15).map(x => `• ${x.full_name} ${x.private ? '🔒' : '🌐'} — ${x.url}`).join('\n');
+      }
+      if (sub === 'create') {
+        const name = rest.split(' ')[0];
+        if (!name) return `Usage: /github create [repo-name] [description]`;
+        const desc = rest.slice(name.length).trim();
+        const r = await createRepo(name, desc, env);
+        if (r.error) return `⚠️ ${r.error}`;
+        return `✅ Created: ${r.url}`;
+      }
+      return `*GitHub Commands:*\n/github repos — list your repositories\n/github create [name] [desc] — create a new repository\n\nOr just say:\n• "generate image of a logo"\n• "create repo named my-project"\n• "list my repos"`;
+    }
 
     case '/status':
       return await getStatusReport(env);
