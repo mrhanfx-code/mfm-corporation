@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import { AgentCard } from './AgentCard';
 import { TelemetryTable } from './TelemetryTable';
 import { ControlModal } from './ControlModal';
 import { ChatWindow } from './ChatWindow';
+import { LogsModal } from './LogsModal';
+import { SettingsPanel } from './SettingsPanel';
 
 interface Agent {
   id: string;
@@ -21,7 +23,9 @@ interface LogEntry {
   lat: string;
 }
 
-const MOCK_AGENTS: Agent[] = [
+const WORKER_URL = 'https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev';
+
+const FALLBACK_AGENTS: Agent[] = [
   { id: 'MK-084', name: 'Brand Sentiment Analyst', team: 'Marketing', status: 'running', load: 84 },
   { id: 'ENG-112', name: 'Refactoring Specialist', team: 'Engineering', status: 'running', load: 42 },
   { id: 'CS-004', name: 'Escalation Resolver', team: 'Success', status: 'idle', load: 0 },
@@ -32,7 +36,7 @@ const MOCK_AGENTS: Agent[] = [
   { id: 'DATA-09', name: 'ETL Pipeline Guard', team: 'Data', status: 'idle', load: 0 }
 ];
 
-const MOCK_LOGS: LogEntry[] = [
+const FALLBACK_LOGS: LogEntry[] = [
   { time: '14:22:01.04', id: 'ENG-112', op: 'code_optimization', status: 'SUCCESS', lat: '124ms' },
   { time: '14:21:58.92', id: 'MK-084', op: 'social_sentiment_scrape', status: 'SUCCESS', lat: '842ms' },
   { time: '14:21:55.10', id: 'MK-102', op: 'creative_generation', status: 'FAILED', lat: '20ms' },
@@ -40,11 +44,42 @@ const MOCK_LOGS: LogEntry[] = [
   { time: '14:21:40.01', id: 'CS-004', op: 'wait_for_trigger', status: 'IDLE', lat: '--' }
 ];
 
-const WORKER = 'https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev';
+function agentNameToTeam(name: string): string {
+  const n = name.toLowerCase();
+  if (/social|media|market|brand|content|creative|ads|campaign/.test(n)) return 'Marketing';
+  if (/engineer|frontend|backend|develop|code|tech|build|test|refactor/.test(n)) return 'Engineering';
+  if (/customer|support|success|service|escalat/.test(n)) return 'Success';
+  if (/data|analyt|etl|pipeline|log|ingest/.test(n)) return 'Data';
+  if (/strateg|execut|kpi|cfo|cto|cmo|coo|cino|forecast/.test(n)) return 'Strategy';
+  return 'General';
+}
+
+function mapApiAgents(raw: { agent: string; task_count: number; avg_score: number; last_activity: string }[]): Agent[] {
+  return raw.map((a, i) => {
+    const minsSinceActive = (Date.now() - new Date(a.last_activity).getTime()) / 60000;
+    const status: Agent['status'] = minsSinceActive < 5 ? 'running' : 'idle';
+    const team = agentNameToTeam(a.agent);
+    const prettyName = a.agent.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return {
+      id: `${team.slice(0, 3).toUpperCase()}-${String(i + 1).padStart(3, '0')}`,
+      name: prettyName,
+      team,
+      status,
+      load: Math.min(Math.round((a.task_count || 0) * 8), 98),
+    };
+  });
+}
+
+interface SystemStatus {
+  uptime: string;
+  active_agents: number;
+  tasks_last_hour: number;
+  system_status: string;
+}
 
 async function verifySecret(secret: string): Promise<boolean> {
   try {
-    const r = await fetch(`${WORKER}/ask`, {
+    const r = await fetch(`${WORKER_URL}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${secret}` },
       body: JSON.stringify({ text: 'ping' }),
@@ -91,11 +126,53 @@ function LoginGate({ onAuth }: { onAuth: () => void }) {
 export function DashboardNew() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [agents, setAgents] = useState<Agent[]>(MOCK_AGENTS);
-  const [logs] = useState<LogEntry[]>(MOCK_LOGS);
+  const [agents, setAgents] = useState<Agent[]>(FALLBACK_AGENTS);
+  const [logs, setLogs] = useState<LogEntry[]>(FALLBACK_LOGS);
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [activeNav, setActiveNav] = useState('All Agents');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [logsModal, setLogsModal] = useState<{ open: boolean; agentId: string | null; title: string }>({ open: false, agentId: null, title: '' });
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [dataSource, setDataSource] = useState<'live' | 'mock'>('mock');
+
+  const fetchLiveData = useCallback(async () => {
+    const secret = localStorage.getItem('mfm_secret') || '';
+    if (!secret) return;
+    try {
+      const headers = { 'Authorization': `Bearer ${secret}` };
+      const [statusRes, agentsRes, tasksRes] = await Promise.all([
+        fetch(`${WORKER_URL}/api/v1/dashboard/status`, { headers }),
+        fetch(`${WORKER_URL}/api/v1/dashboard/agents`, { headers }),
+        fetch(`${WORKER_URL}/api/v1/dashboard/tasks?limit=20`, { headers }),
+      ]);
+      if (statusRes.ok) {
+        const s = await statusRes.json();
+        setSystemStatus(s);
+      }
+      if (agentsRes.ok) {
+        const a = await agentsRes.json();
+        if (a.agents?.length) {
+          setAgents(mapApiAgents(a.agents));
+          setDataSource('live');
+        }
+      }
+      if (tasksRes.ok) {
+        const t = await tasksRes.json();
+        if (t.tasks?.length) {
+          const mapped: LogEntry[] = t.tasks.map((task: { created_at: string; agent: string; input: string; status: string }) => ({
+            time: new Date(task.created_at).toLocaleTimeString(),
+            id: task.agent,
+            op: (task.input || '').slice(0, 40),
+            status: task.status === 'completed' ? 'SUCCESS' : task.status === 'failed' ? 'FAILED' : 'IDLE',
+            lat: '—',
+          }));
+          setLogs(mapped);
+        }
+      }
+    } catch { /* fallback stays */ }
+  }, []);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('mfm:theme') as 'dark' | 'light' || 'dark';
@@ -105,10 +182,17 @@ export function DashboardNew() {
     const saved = localStorage.getItem('mfm_secret');
     if (!saved) { setAuthed(false); return; }
     verifySecret(saved).then(ok => {
-      if (ok) setAuthed(true);
+      if (ok) { setAuthed(true); }
       else { localStorage.removeItem('mfm_secret'); setAuthed(false); }
     });
   }, []);
+
+  useEffect(() => {
+    if (!authed) return;
+    fetchLiveData();
+    const interval = setInterval(fetchLiveData, 30000);
+    return () => clearInterval(interval);
+  }, [authed, fetchLiveData]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -122,7 +206,7 @@ export function DashboardNew() {
   };
 
   const handleViewLogs = (agent: Agent) => {
-    alert(`Viewing Logs for ${agent.id}`);
+    setLogsModal({ open: true, agentId: agent.name.toLowerCase().replace(/ /g, '-'), title: `${agent.name} — Task Logs` });
   };
 
   const handleTerminate = (agent: Agent) => {
@@ -131,9 +215,35 @@ export function DashboardNew() {
     }
   };
 
-  const handleSaveControl = () => {
-    alert('Parameters optimized and propagated to cluster.');
+  const sendCommand = async (command_type: string, target: string, payload?: object) => {
+    const secret = localStorage.getItem('mfm_secret') || '';
+    try {
+      const r = await fetch(`${WORKER_URL}/api/v1/dashboard/commands`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${secret}` },
+        body: JSON.stringify({ command_type, target, payload }),
+      });
+      return r.ok;
+    } catch { return false; }
+  };
+
+  const handleSaveControl = async () => {
+    if (selectedAgent) await sendCommand('configure', selectedAgent.id);
     setSelectedAgent(null);
+  };
+
+  const handlePauseAll = async () => {
+    const ok = await sendCommand('pause_all', 'all');
+    if (ok) {
+      setAgents(prev => prev.map(a => ({ ...a, status: 'idle' as const, load: 0 })));
+    } else {
+      alert('Command sent — Workers will process shortly.');
+    }
+  };
+
+  const handleDeployCluster = async () => {
+    const ok = await sendCommand('deploy', 'new_cluster', { type: 'auto' });
+    alert(ok ? '✅ Deploy command queued.' : '⚠️ Could not reach Worker. Try again.');
   };
 
   const TEAM_MAP: Record<string, string[]> = {
@@ -164,8 +274,8 @@ export function DashboardNew() {
     {
       label: 'Global Controls',
       items: [
-        { label: 'Settings', onClick: () => alert('Settings panel coming soon') },
-        { label: 'System Logs', onClick: () => alert('System Logs coming soon') }
+        { label: 'Settings', onClick: () => setSettingsOpen(true) },
+        { label: 'System Logs', onClick: () => setLogsModal({ open: true, agentId: null, title: 'System Logs — All Agents' }) }
       ]
     }
   ];
@@ -232,7 +342,7 @@ export function DashboardNew() {
               🌓
             </button>
             <button
-              onClick={() => alert('Batch Pause Initiated')}
+              onClick={handlePauseAll}
               style={{
                 padding: '6px 12px',
                 borderRadius: 'var(--radius)',
@@ -247,7 +357,7 @@ export function DashboardNew() {
               Pause All
             </button>
             <button
-              onClick={() => alert('Deploying New Agent Cluster')}
+              onClick={handleDeployCluster}
               style={{
                 padding: '6px 12px',
                 borderRadius: 'var(--radius)',
@@ -266,16 +376,21 @@ export function DashboardNew() {
 
         <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Active Agent Clusters</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Active Agent Clusters</h2>
+              {dataSource === 'live' && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'color-mix(in oklch, var(--success) 15%, transparent)', color: 'var(--success)' }}>LIVE</span>}
+              {dataSource === 'mock' && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'color-mix(in oklch, var(--warning) 15%, transparent)', color: 'var(--warning)' }}>DEMO</span>}
+            </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button style={{ width: '28px', height: '28px', padding: 0, borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--fg)', cursor: 'pointer' }}>≡</button>
-              <button style={{ width: '28px', height: '28px', padding: 0, borderRadius: 'var(--radius)', border: '1px solid var(--accent)', background: 'var(--accent)', color: 'oklch(20% 0.02 255)', cursor: 'pointer' }}>⊞</button>
+              <button onClick={() => setViewMode('list')} style={{ width: '28px', height: '28px', padding: 0, borderRadius: 'var(--radius)', border: `1px solid ${viewMode === 'list' ? 'var(--accent)' : 'var(--border)'}`, background: viewMode === 'list' ? 'var(--accent)' : 'var(--surface)', color: viewMode === 'list' ? 'oklch(20% 0.02 255)' : 'var(--fg)', cursor: 'pointer' }} title="List view">≡</button>
+              <button onClick={() => setViewMode('grid')} style={{ width: '28px', height: '28px', padding: 0, borderRadius: 'var(--radius)', border: `1px solid ${viewMode === 'grid' ? 'var(--accent)' : 'var(--border)'}`, background: viewMode === 'grid' ? 'var(--accent)' : 'var(--surface)', color: viewMode === 'grid' ? 'oklch(20% 0.02 255)' : 'var(--fg)', cursor: 'pointer' }} title="Grid view">⊞</button>
             </div>
           </div>
 
           <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+            display: viewMode === 'grid' ? 'grid' : 'flex',
+            flexDirection: viewMode === 'list' ? 'column' : undefined,
+            gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(280px, 1fr))' : undefined,
             gap: '16px', 
             marginBottom: '32px' 
           }}>
@@ -293,7 +408,7 @@ export function DashboardNew() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Telemetry Feed</h2>
             <button
-              onClick={() => alert('Exporting CSV...')}
+              onClick={() => setLogsModal({ open: true, agentId: null, title: 'System Telemetry Export' })}
               style={{
                 padding: '6px 12px',
                 borderRadius: 'var(--radius)',
@@ -318,6 +433,23 @@ export function DashboardNew() {
         agentName={selectedAgent?.name || ''}
         onClose={() => setSelectedAgent(null)}
         onSave={handleSaveControl}
+      />
+
+      <LogsModal
+        isOpen={logsModal.open}
+        agentId={logsModal.agentId}
+        title={logsModal.title}
+        onClose={() => setLogsModal({ open: false, agentId: null, title: '' })}
+        workerUrl={WORKER_URL}
+        secret={localStorage.getItem('mfm_secret') || ''}
+      />
+
+      <SettingsPanel
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onLogout={() => setAuthed(false)}
+        workerUrl={WORKER_URL}
+        systemStatus={systemStatus}
       />
 
       <ChatWindow
