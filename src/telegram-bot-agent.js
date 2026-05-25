@@ -21,8 +21,18 @@ export default {
       return await handleDashboardAPI(request, env, path);
     }
 
+    const cors = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: cors });
+    }
+
     if (request.method === 'GET') {
-      if (url.pathname === '/') return new Response('MFM Corporation AI — Online', { status: 200 });
+      if (url.pathname === '/') return new Response('MFM Corporation AI — Online', { status: 200, headers: cors });
       if (url.pathname === '/health') {
         const checks = {
           kv:       !!env.KV,
@@ -38,7 +48,7 @@ export default {
         const status  = healthy === total ? 'healthy' : healthy >= 5 ? 'degraded' : 'unhealthy';
         return new Response(
           JSON.stringify({ status, checks, score: `${healthy}/${total}`, ts: new Date().toISOString() }, null, 2),
-          { status: status === 'unhealthy' ? 503 : 200, headers: { 'Content-Type': 'application/json' } }
+          { status: status === 'unhealthy' ? 503 : 200, headers: { ...cors, 'Content-Type': 'application/json' } }
         );
       }
 
