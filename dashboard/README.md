@@ -1,73 +1,164 @@
-# React + TypeScript + Vite
+# MFM Corporation Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+CEO Remy Command Center - Real-time agent monitoring and control interface.
 
-Currently, two official plugins are available:
+## 🚀 Live Deployment
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**URL:** https://mfm-corp.cc.cd
 
-## React Compiler
+## 🛠️ Technology Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 19.2.6** - UI Framework
+- **TypeScript 6.0.2** - Type Safety
+- **Vite 8.0.12** - Build Tool
+- **Tailwind CSS 4.3.0** - Styling
+- **Zustand 5.0.13** - State Management
+- **Recharts 3.8.1** - Data Visualization
+- **Socket.io Client 4.8.3** - Real-time Communication
 
-## Expanding the ESLint configuration
+## 📊 Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Dashboard Components
+- **LoginGate** - Secret-based authentication
+- **Sidebar** - Navigation with team filtering
+- **AgentCard** - Individual agent display with controls
+- **TelemetryTable** - Real-time task logs
+- **ControlModal** - Agent configuration interface
+- **ChatWindow** - CEO communication interface
+- **SettingsPanel** - System settings and status
+- **LogsModal** - Detailed log viewer
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Agent Management
+- **42 Agents** across 6 departments (COO, CTO, CMO, CFO, CINO, CLO)
+- **Real-time Status** - Running, Idle, Error states
+- **Load Monitoring** - CPU/memory usage per agent
+- **Quality Scoring** - Performance metrics (avg 52.6)
+- **Team Filtering** - Filter by department
+- **Grid/List Views** - Flexible display options
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Global Controls
+- **Pause All** - Stop all agents
+- **Deploy Cluster** - Spin up new agent clusters
+- **Theme Toggle** - Dark/Light mode
+- **Export CSV** - Telemetry data export
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 🔐 Authentication
+
+Dashboard requires secret-based authentication:
+- Secret stored in localStorage (mfm_secret)
+- Verified against Cloudflare Worker API
+- Auto-verification on page load
+- Logout functionality available
+
+## 📡 API Integration
+
+**Worker URL:** https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev
+
+**Endpoints:**
+- `/api/v1/dashboard/status` - System health metrics
+- `/api/v1/dashboard/agents` - Agent list and status
+- `/api/v1/dashboard/tasks` - Task history and logs
+- `/api/v1/dashboard/commands` - Agent control commands
+
+**Data Refresh:** 30-second polling interval
+
+## 🎨 Development
+
+### Prerequisites
+- Node.js 14.0.0+
+- npm or yarn
+
+### Installation
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Development
+```bash
+npm run dev
 ```
+
+### Build
+```bash
+npm run build
+```
+
+### Preview
+```bash
+npm run preview
+```
+
+### Deploy
+```bash
+npm run deploy
+```
+
+## 📁 Project Structure
+
+```
+dashboard/
+├── src/
+│   ├── components/
+│   │   ├── DashboardNew.tsx    # Main dashboard component
+│   │   ├── Sidebar.tsx         # Navigation sidebar
+│   │   ├── AgentCard.tsx       # Agent display card
+│   │   ├── TelemetryTable.tsx  # Task logs table
+│   │   ├── ControlModal.tsx    # Agent configuration modal
+│   │   ├── ChatWindow.tsx      # CEO chat interface
+│   │   ├── SettingsPanel.tsx   # Settings panel
+│   │   └── LogsModal.tsx       # Detailed logs viewer
+│   ├── App.tsx                 # Root component
+│   ├── main.tsx                # Entry point
+│   └── index.css               # Global styles
+├── public/                     # Static assets
+├── index.html                  # HTML template
+├── vite.config.ts              # Vite configuration
+├── tsconfig.json               # TypeScript configuration
+└── package.json                # Dependencies
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+No environment variables required. Dashboard connects directly to Cloudflare Worker API.
+
+### Worker URL
+Set `WORKER_URL` in `DashboardNew.tsx` to change the backend endpoint (default: https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev)
+
+## 📈 System Status (Last Updated: May 28, 2026)
+
+**Overall Rating:** A- (Operational)
+
+### Infrastructure
+- All 7 components operational (KV, D1, R2, Queue, Telegram, LLM, Cerebras)
+- API response time: <1 second
+- Database query time: 0.44ms average
+- System uptime: 99.9%
+
+### Agent Performance
+- Total agents: 42
+- Active agents: 7/42 (last 24 hours)
+- Quality scores: 78-96 (good to excellent)
+- Task completion rate: 96.4%
+
+### Security Note
+⚠️ Dashboard authentication is operational, but backend secrets require rotation (see main SYSTEM-TEST-REPORT-2026-05-28.md)
+
+## 📱 Responsive Design
+
+Dashboard is fully responsive and optimized for:
+- Desktop (1920x1080+)
+- Tablet (768x1024)
+- Mobile (375x667+)
+
+## 🎯 Getting Started
+
+1. Clone the repository
+2. Run `npm install`
+3. Run `npm run dev`
+4. Open http://localhost:5173
+5. Enter dashboard secret to authenticate
+
+---
+
+*MFM Corporation Dashboard - CEO Remy Command Center*

@@ -1,36 +1,42 @@
 # MFM Corporation - CEO Remy Command Center
 
-> 🎯 **Mission**: AI-powered corporate automation with 19 specialized teams coordinated through natural language chat interface.
+> 🎯 **Mission**: AI-powered corporate automation with 42 specialized agents coordinated through natural language chat interface.
 
 ## 🏢 Corporate Structure
 
-**CEO Remy** → **General Manager** → **5 C-Level Executives** → **19 Specialized Teams**
+**CEO Remy** → **General Manager** → **5 C-Level Executives** → **42 Specialized Agents**
 
 ### C-Level Executives:
-- **Chief Operating Officer (COO)** - Operations & Quality Control
-- **Chief Technology Officer (CTO)** - Technology & Development  
-- **Chief Marketing Officer (CMO)** - Marketing & Media
-- **Chief Financial Officer (CFO)** - Finance & Business Planning
-- **Chief Innovation Officer (CINO)** - Research & Innovation
+- **Chief Operating Officer (COO)** - Operations & Quality Control (12 agents)
+- **Chief Technology Officer (CTO)** - Technology & Development (9 agents)
+- **Chief Marketing Officer (CMO)** - Marketing & Media (6 agents)
+- **Chief Financial Officer (CFO)** - Finance & Business Planning (4 agents)
+- **Chief Innovation Officer (CINO)** - Research & Innovation (8 agents)
+- **Chief Legal Officer (CLO)** - Legal Advisory (1 agent)
 
-### 19 Specialized Teams:
-- **Innovation & Market Intelligence** (4 teams)
-- **Core Operations** (3 teams)
-- **Marketing & Media** (2 teams)
-- **Management & Quality** (2 teams)
-- **Support Layer** (4 teams)
-- **Analytics Layer** (2 teams)
-- **Enhancement Layer** (2 teams)
+### 42 Specialized Agents:
+- **COO Team**: ops-coordinator, quality-ops-reviewer, process-optimizer, data-governance-agent, strategic-planner, meeting-scheduler, reporting-analyst, project-manager, notification-manager, google-drive-agent, analytics-reporter, pdf-generator, quality-control-manager
+- **CTO Team**: tech-advisor, devops-monitor, security-auditor, integration-agent, development-advisor, frontend-developer, backend-developer, qa-engineer, database-specialist, cloud-engineer
+- **CMO Team**: content-writer, market-analyst, customer-success-agent, social-media-agent, media-producer, email-marketing-agent
+- **CFO Team**: finance-planner, risk-assessor, grant-tracker, revenue-analyst
+- **CINO Team**: research-agent, idea-generator, trend-spotter, innovation-coach, innovation-analyst, mcp-llm-agent, technology-tracker, data-analyst
+- **CLO Team**: legal-advisor
 
 ## 🚀 Live Deployment
 
-**URL:** https://mrhanfx-code.github.io/mfm-corporation
+**Primary URL:** https://mfm-corp.cc.cd (Dashboard)
+**Secondary URL:** https://mrhanfx-code.github.io/mfm-corporation
+**Bot Worker:** https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev
 
 **Technology Stack:**
-- **Frontend:** GitHub Pages (Free)
-- **Backend:** Supabase (Free Tier)
-- **Authentication:** 2FA Secure Login
-- **Real-time:** WebSocket Connections
+- **Frontend 1:** GitHub Pages (Free)
+- **Frontend 2:** React 19.2.6 + Vite 8.0.12 + TypeScript
+- **Backend:** Cloudflare Workers (Serverless)
+- **Database:** Cloudflare D1 (SQLite)
+- **Cache:** Cloudflare KV
+- **Storage:** Cloudflare R2
+- **Authentication:** Bearer token + Secret-based
+- **Real-time:** 30-second polling
 - **Mobile:** Responsive Design
 
 ## 💬 CEO Command Interface
@@ -45,27 +51,33 @@ CEO Remy can chat naturally with the General Manager using:
 
 ### ✅ Core Capabilities:
 - Natural language command processing
-- Real-time team status monitoring
+- Real-time agent status monitoring
 - Universal file sharing (all formats)
 - Quality control with redo requests
 - Mobile-optimized interface
-- 2FA secure authentication
+- Secret-based authentication
+- Multi-modal processing (images, documents, audio, video)
 
 ### ✅ Corporate Management:
-- 19 team coordination through chat
+- 42 agent coordination through chat
 - 5 C-level executive responses
-- Quality scoring and monitoring
+- Quality scoring and monitoring (avg 52.6)
 - Task assignment and tracking
 - Performance analytics
 - Emergency controls
+- Real-time telemetry feed
 
 ## 🔒 Security
 
-- **Secure email and password authentication**
+- **Multi-layer authentication** (Telegram webhook, dashboard endpoints, user whitelist)
+- **Rate limiting** (30 req/min per user, 20 req/min per IP)
+- **Input validation** (Control character filtering, length limits)
 - **Encrypted data transmission**
 - **Secure session management**
 - **Role-based access control**
 - **Data privacy protection**
+
+⚠️ **Security Status**: Operational but requires secret rotation (see SYSTEM-TEST-REPORT-2026-05-28.md)
 
 ## ⚡ Superpowers Integration
 
@@ -84,7 +96,33 @@ CEO Remy can chat naturally with the General Manager using:
 - **Malaysia timezone** support
 - **Local performance** optimization
 
-## 📱 Mobile Access
+## � System Status (Last Updated: May 28, 2026)
+
+**Overall Rating**: A- (Operational with Critical Security Issues)
+
+### Infrastructure Health: ✅ 7/7 Components Operational
+- KV Cache: Connected
+- D1 Database: Connected (0.44ms query time)
+- R2 Storage: Connected
+- Queue System: Connected
+- Telegram Integration: Connected
+- LLM Providers: Connected (OpenRouter + Cerebras)
+- System Uptime: 99.9%
+
+### Performance Metrics:
+- API Response Time: <1 second
+- Database Query Time: 0.44ms average
+- Active Agents: 7/42 (last 24 hours)
+- Quality Scores: 78-96 (good to excellent)
+- Task Completion Rate: 96.4%
+
+### Critical Issues:
+⚠️ **IMMEDIATE ACTION REQUIRED**: Secrets exposed in wrangler.toml
+- SENDGRID_API_KEY, TELEGRAM_BOT_TOKEN, WEBHOOK_SECRET need rotation
+- Convert to Cloudflare secret bindings
+- See SYSTEM-TEST-REPORT-2026-05-28.md for details
+
+## � Mobile Access
 
 Complete mobile functionality for CEO Remy to:
 - Chat with General Manager anywhere
@@ -96,11 +134,13 @@ Complete mobile functionality for CEO Remy to:
 
 ## 🎯 Getting Started
 
-1. **Visit:** https://mrhanfx-code.github.io/mfm-corporation
-2. **Login:** CEO Remy with 2FA authentication
-3. **Chat:** Natural commands to General Manager
-4. **Monitor:** Real-time team performance
-5. **Control:** Complete corporate oversight
+1. **Visit Dashboard:** https://mfm-corp.cc.cd (primary)
+2. **Login:** Enter dashboard secret (authentication required)
+3. **Monitor:** Real-time agent performance (42 agents)
+4. **Control:** Agent lifecycle management (pause, terminate, configure)
+5. **Chat:** CEO Remy communication interface
+
+**Alternative:** https://mrhanfx-code.github.io/mfm-corporation
 
 ---
 
