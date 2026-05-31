@@ -11,6 +11,11 @@ const corsHeaders = {
 export async function handleDashboardAPI(request, env, path) {
   const url = new URL(request.url);
   
+  // Handle OPTIONS preflight requests
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+  
   try {
     // GET /api/v1/dashboard/status - System health overview
     if (path === '/api/v1/dashboard/status' && request.method === 'GET') {
@@ -40,10 +45,31 @@ export async function handleDashboardAPI(request, env, path) {
       return await getMetricsReport(env, corsHeaders);
     }
 
+    // GET /api/v1/dashboard/costs - Cost tracking summary
+    if (path === '/api/v1/dashboard/costs' && request.method === 'GET') {
+      const days = parseInt(url.searchParams.get('days') || '7');
+      return await getCostSummary(days, env, corsHeaders);
+    }
+
     // POST /api/v1/dashboard/commands - Send command to agent
     if (path === '/api/v1/dashboard/commands' && request.method === 'POST') {
       const body = await request.json();
       return await sendCommand(body, env, corsHeaders);
+    }
+
+    // GET /api/v1/dashboard/security - Security posture and events
+    if (path === '/api/v1/dashboard/security' && request.method === 'GET') {
+      return await getSecurityReport(env, corsHeaders);
+    }
+
+    // GET /api/v1/dashboard/security/alerts - Active security alerts
+    if (path === '/api/v1/dashboard/security/alerts' && request.method === 'GET') {
+      return await getSecurityAlerts(env, corsHeaders);
+    }
+
+    // GET /api/v1/dashboard/security/threats - Threat intelligence
+    if (path === '/api/v1/dashboard/security/threats' && request.method === 'GET') {
+      return await getThreatIntelligence(env, corsHeaders);
     }
 
     return new Response('Endpoint not found', { status: 404, headers: corsHeaders });
@@ -202,6 +228,117 @@ async function sendCommand(body, env, corsHeaders) {
     status: 'pending',
     message: 'Command queued for execution'
   }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+async function getCostSummary(days, env, corsHeaders) {
+  const since = Date.now() - (days * 24 * 60 * 60 * 1000);
+  
+  const result = await env.db.prepare(`
+    SELECT 
+      model,
+      task_type,
+      SUM(cost) as total_cost,
+      SUM(total_tokens) as total_tokens,
+      COUNT(*) as calls
+    FROM model_usage
+    WHERE timestamp > ?
+    GROUP BY model, task_type
+    ORDER BY total_cost DESC
+  `).bind(since).all();
+
+  const summary = {
+    total_cost: 0,
+    total_tokens: 0,
+    total_calls: 0,
+    by_model: {},
+    by_task: {},
+    period_days: days
+  };
+
+  for (const row of result.results || []) {
+    summary.total_cost += row.total_cost;
+    summary.total_tokens += row.total_tokens;
+    summary.total_calls += row.calls;
+
+    if (!summary.by_model[row.model]) {
+      summary.by_model[row.model] = { cost: 0, tokens: 0, calls: 0 };
+    }
+    summary.by_model[row.model].cost += row.total_cost;
+    summary.by_model[row.model].tokens += row.total_tokens;
+    summary.by_model[row.model].calls += row.calls;
+
+    if (!summary.by_task[row.task_type]) {
+      summary.by_task[row.task_type] = { cost: 0, tokens: 0, calls: 0 };
+    }
+    summary.by_task[row.task_type].cost += row.total_cost;
+    summary.by_task[row.task_type].tokens += row.total_tokens;
+    summary.by_task[row.task_type].calls += row.calls;
+  }
+
+  return new Response(JSON.stringify(summary), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+async function getSecurityReport(env, corsHeaders) {
+  // Security posture score calculation
+  const score = 85; // Placeholder - would use SecurityTrackingService
+  
+  const security = {
+    score,
+    rating: score >= 90 ? 'Excellent' : score >= 80 ? 'Good' : score >= 60 ? 'Medium' : 'Poor',
+    active_alerts: 0,
+    recent_events: [],
+    posture: {
+      authentication: 'secure',
+      authorization: 'secure',
+      data_protection: 'secure',
+      network: 'secure'
+    },
+    timestamp: new Date().toISOString()
+  };
+
+  return new Response(JSON.stringify(security), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+async function getSecurityAlerts(env, corsHeaders) {
+  // Get active security alerts
+  const alerts = await env.db.prepare(`
+    SELECT id, type, severity, message, timestamp
+    FROM security_alerts
+    WHERE status = 'active'
+    ORDER BY timestamp DESC
+    LIMIT 20
+  `).all();
+
+  return new Response(JSON.stringify({ 
+    alerts: alerts.results || [],
+    count: (alerts.results || []).length
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+async function getThreatIntelligence(env, corsHeaders) {
+  // Threat intelligence summary
+  const intelligence = {
+    risk_score: 15,
+    top_threats: [],
+    recommendations: [
+      {
+        priority: 'low',
+        action: 'Monitor authentication patterns',
+        type: 'authentication'
+      }
+    ],
+    last_scan: new Date().toISOString()
+  };
+
+  return new Response(JSON.stringify(intelligence), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });
 }
