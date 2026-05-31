@@ -10,7 +10,7 @@ import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js
 import { reviewOutput } from './quality-reviewer.js';
 import { AgentBase } from './agent-base.js';
 import { buildContextCard } from './context-card.js';
-import { emitDashboardEvent } from '../tools/dashboard-events.js';
+import { emitDashboardEvent, emitAgentStatus, emitTaskUpdate } from '../tools/dashboard-events.js';
 
 import { OpsCoordinator } from '../agents/coo/ops-coordinator.js';
 import { StrategicPlanner } from '../agents/coo/strategic-planner.js';
@@ -56,6 +56,8 @@ import { DataAnalyst } from '../agents/cino/data-analyst.js';
 import { LegalAdvisor } from '../agents/clo/legal-advisor.js';
 import { generateImage, formatImageResponse } from '../tools/image-tool.js';
 import { createRepo, pushFile, pushMultipleFiles, listRepos, triggerWorkflow } from '../tools/github-tool.js';
+import { getPage, createPage, appendToPage, queryDatabase, searchNotion } from '../tools/notion-tool.js';
+import { storeMemory, searchMemory, getRecentMemories, extractKeywords } from '../memory/memory-service.js';
 
 const ORCHESTRATOR_MODEL = MODELS.CEREBRAS_FAST;
 
@@ -486,6 +488,38 @@ async function handleSlashCommand(text, userId, env) {
     case '/clear':
       await clearAllMemory(userId, env);
       return '🧹 All agent conversation memory cleared.';
+
+    case '/remember': {
+      if (!args) return '⚠️ Usage: /remember [content to remember]';
+      const keywords = extractKeywords(args);
+      const memoryId = await storeMemory(env, args, keywords, 'general');
+      if (memoryId) {
+        return `💾 Memory stored (ID: ${memoryId.slice(0, 8)}...)\nKeywords: ${keywords.slice(0, 5).join(', ')}`;
+      }
+      return '⚠️ Failed to store memory.';
+    }
+
+    case '/recall': {
+      if (!args) return '⚠️ Usage: /recall [search query]';
+      const results = await searchMemory(env, args, 5);
+      if (results.length === 0) return '🔍 No memories found.';
+      const formatted = results.map(r => 
+        `• ${r.content.slice(0, 100)}${r.content.length > 100 ? '...' : ''} ${r.pinned ? '📌' : ''}`
+      ).join('\n');
+      return `🔍 Found ${results.length} memories:\n\n${formatted}`;
+    }
+
+    case '/pin': {
+      if (!args) return '⚠️ Usage: /pin [memory ID]';
+      const success = await pinMemory(env, args);
+      return success ? '📌 Memory pinned.' : '⚠️ Failed to pin memory.';
+    }
+
+    case '/unpin': {
+      if (!args) return '⚠️ Usage: /unpin [memory ID]';
+      const success = await unpinMemory(env, args);
+      return success ? '📍 Memory unpinned.' : '⚠️ Failed to unpin memory.';
+    }
 
     case '/approve': {
       if (!env.KV) return '⚠️ KV not configured.';
