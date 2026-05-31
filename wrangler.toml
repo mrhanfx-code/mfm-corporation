@@ -2,6 +2,7 @@ name = "mfm-corporation-telegram-bot"
 main = "src/telegram-bot-agent.js"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+account_id = "7cd8ba743d303bcd9f4633ca0105bbdf"
 
 # Observability — applied at root level for all deployments
 [observability]
@@ -43,6 +44,11 @@ database_id = "91e8699c-2731-4f0d-8a09-9f9765e7e4cc"
 [[r2_buckets]]
 binding = "mfm-corporation-uploads"
 bucket_name = "mfm-corporation-uploads"
+
+# Backup R2 bucket
+[[r2_buckets]]
+binding = "mfm-corporation-backups"
+bucket_name = "mfm-corporation-backups"
 
 # Cloudflare Workers AI — image generation (free tier: 10,000 neurons/day)
 [ai]

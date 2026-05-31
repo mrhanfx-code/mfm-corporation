@@ -38,7 +38,6 @@ const TOOL_DEPENDENCIES = {
   'codegraph-context': [],
   'd1-query': [],
   'memory-search': [],
-  'memory-remember': [],
   'memory-context': [],
   'memory-enrich': [],
   'social-post': []
