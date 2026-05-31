@@ -156,6 +156,12 @@ CEO Remy can chat naturally with the General Manager using:
 - Convert to Cloudflare secret bindings
 - See SYSTEM-TEST-REPORT-2026-05-28.md for details
 
+⚠️ **PENDING**: Email domain verification (mail.mfm-corp.cc.cd)
+- DNS SPF record needs correction (use exact value from Resend dashboard)
+- Conflicting MX records need resolution (use subdomain or remove root MX)
+- Status: Deferred - will address after other priorities
+- See Resend dashboard: https://resend.com/domains
+
 ## � Mobile Access
 
 Complete mobile functionality for CEO Remy to:
