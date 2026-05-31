@@ -1,24 +1,25 @@
-// Email tool — SendGrid send
+// Email tool — Resend send
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function sendEmail(to, subject, body, env) {
-  if (!env.SENDGRID_API_KEY) return { ok: false, error: 'SENDGRID_API_KEY not set' };
+  if (!env.RESEND_API_KEY) return { ok: false, error: 'RESEND_API_KEY not set' };
   if (!to || !EMAIL_RE.test(to)) return { ok: false, error: 'Invalid recipient email' };
   if (!subject || subject.length > 200) return { ok: false, error: 'Subject missing or too long (max 200 chars)' };
   if (!body || body.length > 50000) return { ok: false, error: 'Body missing or too long (max 50KB)' };
 
   const payload = {
-    personalizations: [{ to: [{ email: to }], subject }],
-    from: { email: 'bot@mfm-corporation.com', name: 'MFM Corporation AI' },
-    reply_to: { email: env.USER_EMAIL || to },
-    content: [{ type: 'text/plain', value: body }]
+    from: 'bot@mfm-corporation.com',
+    to: to,
+    subject: subject,
+    text: body,
+    reply_to: env.USER_EMAIL || to
   };
 
-  const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+  const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${env.SENDGRID_API_KEY}`,
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)
