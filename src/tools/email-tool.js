@@ -9,7 +9,7 @@ export async function sendEmail(to, subject, body, env) {
   if (!body || body.length > 50000) return { ok: false, error: 'Body missing or too long (max 50KB)' };
 
   const payload = {
-    from: 'bot@mfm-corporation.com',
+    from: 'support@mfm-corp.cc.cd',
     to: to,
     subject: subject,
     text: body,
