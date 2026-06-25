@@ -71,3 +71,20 @@ max_batch_timeout = 30
 [triggers]
 crons = ["0 0 * * *", "0 5 * * *", "0 10 * * *"]
 
+# Additional scheduled tasks for reliability
+# Health check every 5 minutes
+# D1 backup daily at 02:00 UTC (10:00 MYT)
+# DLQ processing every 15 minutes
+# Anomaly detection every hour
+[[triggers.crons]]
+crons = "*/5 * * * *"
+
+[[triggers.crons]]
+crons = "0 2 * * *"
+
+[[triggers.crons]]
+crons = "*/15 * * * *"
+
+[[triggers.crons]]
+crons = "0 * * * *"
+

@@ -18,7 +18,9 @@
     "test:e2e": "playwright test",
     "lint": "echo 'Linting would run here'",
     "serve": "python -m http.server 8000",
-    "monitor": "node scripts/synthetic-monitoring.js"
+    "monitor": "node scripts/synthetic-monitoring.js",
+    "backup": "node scripts/d1-backup.js",
+    "dashboard": "node scripts/monitoring-dashboard.js"
   },
   "keywords": [
     "corporate",
