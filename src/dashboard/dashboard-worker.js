@@ -3,12 +3,131 @@
 
 import { routeMessage } from '../core/orchestrator.js';
 
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+// CORS headers generator
+function getCorsHeaders(env) {
+  return {
+    'Access-Control-Allow-Origin': env.DASHBOARD_ORIGIN || 'https://mfm-corp.cc.cd',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
+
+// Authentication for dashboard API
+async function authenticateRequest(request, env) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.substring(7);
+  
+  // Validate token against environment variable
+  if (!env.DASHBOARD_API_TOKEN) {
+    console.error('[Dashboard] DASHBOARD_API_TOKEN not configured');
+    return null;
+  }
+  
+  // Simple token validation (in production, use JWT or proper auth)
+  if (token !== env.DASHBOARD_API_TOKEN) {
+    console.error('[Dashboard] Invalid token provided');
+    return null;
+  }
+  
+  return token;
+}
+
+// Rate limiting using Cloudflare KV
+async function checkRateLimit(request, env) {
+  if (!env.KV) {
+    console.warn('[Dashboard] KV not configured, rate limiting disabled');
+    return true;
+  }
+  
+  // Use IP address or auth token as rate limit key
+  const authHeader = request.headers.get('Authorization');
+  const rateLimitKey = authHeader 
+    ? `ratelimit:auth:${authHeader.substring(7).substring(0, 16)}`
+    : `ratelimit:ip:${request.headers.get('CF-Connecting-IP') || 'unknown'}`;
+  
+  const now = Date.now();
+  const windowStart = now - 60000; // 1 minute window
+  
+  try {
+    const rateData = await env.KV.get(rateLimitKey, { type: 'json' }) || { count: 0, reset: now + 60000 };
+    
+    // Reset if window expired
+    if (now > rateData.reset) {
+      await env.KV.put(rateLimitKey, JSON.stringify({ count: 1, reset: now + 60000 }), { expirationTtl: 60 });
+      return true;
+    }
+    
+    // Check limit (100 requests per minute)
+    if (rateData.count >= 100) {
+      console.warn(`[Dashboard] Rate limit exceeded for ${rateLimitKey}`);
+      return false;
+    }
+    
+    // Increment counter
+    await env.KV.put(rateLimitKey, JSON.stringify({ count: rateData.count + 1, reset: rateData.reset }), { expirationTtl: 60 });
+    return true;
+  } catch (error) {
+    console.error('[Dashboard] Rate limit check failed:', error);
+    // Fail open on rate limit errors
+    return true;
+  }
+}
+
+// Input validation and sanitization
+const INPUT_MAX_CHARS = 4000;
+const CTRL_CHAR_PATTERN = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g;
+
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return '';
+  
+  // Remove control characters
+  let sanitized = input.replace(CTRL_CHAR_PATTERN, '');
+  
+  // Limit length
+  if (sanitized.length > INPUT_MAX_CHARS) {
+    sanitized = sanitized.substring(0, INPUT_MAX_CHARS);
+  }
+  
+  return sanitized.trim();
+}
+
+function validateCommandPayload(body) {
+  if (!body || typeof body !== 'object') {
+    return { valid: false, error: 'Invalid payload' };
+  }
+  
+  if (!body.command_type || typeof body.command_type !== 'string') {
+    return { valid: false, error: 'Missing or invalid command_type' };
+  }
+  
+  if (!body.target || typeof body.target !== 'string') {
+    return { valid: false, error: 'Missing or invalid target' };
+  }
+  
+  // Sanitize string fields
+  if (body.command_type) body.command_type = sanitizeInput(body.command_type);
+  if (body.target) body.target = sanitizeInput(body.target);
+  
+  // Validate payload if present
+  if (body.payload) {
+    if (typeof body.payload === 'string') {
+      body.payload = sanitizeInput(body.payload);
+    } else if (typeof body.payload === 'object') {
+      // Sanitize string values in object
+      for (const key in body.payload) {
+        if (typeof body.payload[key] === 'string') {
+          body.payload[key] = sanitizeInput(body.payload[key]);
+        }
+      }
+    }
+  }
+  
+  return { valid: true, sanitized: body };
+}
 
 // D1 retry wrapper with exponential backoff for transient errors
 async function withD1Retry(operation, context = 'D1 operation', maxRetries = 3) {
@@ -63,10 +182,33 @@ function isTransientD1Error(errorMessage) {
 
 export async function handleDashboardAPI(request, env, path) {
   const url = new URL(request.url);
+  const corsHeaders = getCorsHeaders(env);
   
   // Handle OPTIONS preflight requests
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
+  }
+  
+  // Rate limiting (skip for health check)
+  if (path !== '/health' && path !== '/') {
+    const rateLimitPassed = await checkRateLimit(request, env);
+    if (!rateLimitPassed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' }
+      });
+    }
+  }
+  
+  // Authenticate all requests except health check
+  if (path !== '/health' && path !== '/') {
+    const authToken = await authenticateRequest(request, env);
+    if (!authToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
   }
   
   try {
@@ -129,7 +271,7 @@ export async function handleDashboardAPI(request, env, path) {
   } catch (error) {
     console.error('Dashboard API error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -278,14 +420,16 @@ async function getMetricsReport(env, corsHeaders) {
 }
 
 async function sendCommand(body, env, corsHeaders) {
-  const { command_type, target, payload } = body;
-
-  if (!command_type || !target) {
-    return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+  // Validate and sanitize input
+  const validation = validateCommandPayload(body);
+  if (!validation.valid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
+  
+  const { command_type, target, payload } = validation.sanitized;
 
   // Log command to database
   const commandId = crypto.randomUUID();
@@ -303,8 +447,11 @@ async function sendCommand(body, env, corsHeaders) {
     const taskText = payload?.task || payload?.input || JSON.stringify(payload);
     const userId = payload?.userId || 'dashboard-user';
     
+    // Sanitize task text
+    const sanitizedTaskText = sanitizeInput(taskText);
+    
     // Route to orchestrator for agent execution
-    const result = await routeMessage({ text: taskText }, userId, env);
+    const result = await routeMessage({ text: sanitizedTaskText }, userId, env);
     
     // Update command status to completed
     await withD1Retry(
@@ -340,7 +487,7 @@ async function sendCommand(body, env, corsHeaders) {
     return new Response(JSON.stringify({
       command_id: commandId,
       status: 'failed',
-      error: error.message,
+      error: 'Command execution failed',
       message: 'Command execution failed'
     }), {
       status: 500,
