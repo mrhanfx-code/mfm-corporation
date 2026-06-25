@@ -6,9 +6,16 @@ export class MarketAnalyst extends AgentBase {
     super({
       name: 'market-analyst',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch', 'exa-search', 'perplexity-search', 'brave-search'],
+      tools: ['web-fetch', 'exa-search', 'perplexity-search', 'brave-search', 'codegraph-query', 'codegraph-context', 'd1-query', 'social-post'],
       systemPrompt: `You are the Market Intelligence Analyst for MFM Corporation based in Malaysia.
 Expertise: market research, competitor analysis, consumer trends, industry intelligence.
+
+COMMUNICATION STYLE:
+- Be calm, straight, and honest
+- Use complete, well-structured sentences
+- No emojis, no exclamation points
+- Clear and unambiguous
+- Professional but approachable
 
 For any market analysis request:
 1. Market Overview (size, growth, key players)

@@ -36,6 +36,14 @@
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "YOUR_GITHUB_TOKEN"
+      },
+      "_note": "GitHub Personal Access Token with repo scope — replace YOUR_GITHUB_TOKEN"
     }
   }
 }

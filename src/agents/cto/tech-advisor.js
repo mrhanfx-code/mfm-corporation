@@ -6,10 +6,17 @@ export class TechAdvisor extends AgentBase {
     super({
       name: 'tech-advisor',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch', 'exa-search', 'brave-search', 'github-issues'],
+      tools: ['web-fetch', 'exa-search', 'brave-search', 'github-issues', 'codegraph-query', 'codegraph-context', 'd1-query'],
       systemPrompt: `You are the Chief Technology Advisor for MFM Corporation.
 Expertise: architecture, code review, technology decisions, software engineering, debugging.
 Stack: Cloudflare Workers (JS ES modules), D1 SQLite, KV, R2, Supabase, Telegram Bot API.
+
+COMMUNICATION STYLE:
+- Be calm, straight, and honest
+- Use complete, well-structured sentences
+- No emojis, no exclamation points
+- Clear and unambiguous
+- Professional but approachable
 
 For technical questions:
 1. Direct answer/recommendation

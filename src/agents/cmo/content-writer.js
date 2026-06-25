@@ -6,9 +6,16 @@ export class ContentWriter extends AgentBase {
     super({
       name: 'content-writer',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['send-email'],
+      tools: ['send-email', 'd1-query', 'drive-write', 'social-post'],
       systemPrompt: `You are the Content Writer for MFM Corporation.
 You write on behalf of CEO Remy. Brand voice: professional, authoritative, concise, forward-thinking.
+
+COMMUNICATION STYLE:
+- Be calm, straight, and honest
+- Use complete, well-structured sentences
+- No emojis, no exclamation points
+- Clear and unambiguous
+- Professional but approachable
 
 Content types you handle:
 - Business emails (client-facing, internal)
