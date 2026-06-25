@@ -17,7 +17,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "lint": "echo 'Linting would run here'",
-    "serve": "python -m http.server 8000"
+    "serve": "python -m http.server 8000",
+    "monitor": "node scripts/synthetic-monitoring.js"
   },
   "keywords": [
     "corporate",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.16.10",
+    "@sentry/node": "^8.0.0",
     "@vitest/coverage-v8": "^4.1.7",
     "miniflare": "^4.20260526.0",
     "playwright": "^1.48.0",

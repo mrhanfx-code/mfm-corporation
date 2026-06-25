@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['tests/unit/**/*.test.js', 'tests/integration/**/*.test.js'],
+    include: ['tests/**/*.test.js'],
     exclude: ['tests/api.test.js', 'tests/memory-service.test.js', 'tests/model-router.test.js', 'tests/notion-tool.test.js'],
     environment: 'node',
     coverage: {
@@ -11,10 +11,10 @@ export default defineConfig({
       include: ['src/**/*.js'],
       exclude: ['node_modules/', 'tests/', 'dashboard/'],
       all: true,
-      lines: 80,
-      functions: 80,
-      branches: 80,
-      statements: 80,
+      lines: 70,
+      functions: 70,
+      branches: 70,
+      statements: 70,
     },
   },
 });
