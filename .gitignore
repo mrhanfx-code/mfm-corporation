@@ -19,3 +19,6 @@ Thumbs.db
 dark-art-3b9a.txt
 cloudflare_apeeaii.txt
 *.txt
+
+# Dashboard (Next.js)
+dashboard/.next/
