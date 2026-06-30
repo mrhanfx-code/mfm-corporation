@@ -1,0 +1,7 @@
+# Cloudflare Pages configuration for the MFM Corporation dashboard (React + Vite)
+# This file is the source of truth for the Pages build output directory and
+# overrides the dashboard "Build output directory" setting when the v2 build
+# system is active. Vite outputs to ./dist (see vite.config.ts).
+name = "mfm-corporation-git"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
