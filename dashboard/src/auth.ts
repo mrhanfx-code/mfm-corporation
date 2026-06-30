@@ -14,10 +14,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const password = credentials?.password as string | undefined;
 
         if (!username || !password) return null;
-        if (username !== "admin") return null;
+        const adminUsername = process.env.ADMIN_USERNAME || "admin";
+        if (username !== adminUsername) return null;
 
         const hashB64 = process.env.ADMIN_PASSWORD_HASH_B64;
-        if (!hashB64) return null;
+        if (!hashB64) {
+          console.error('CRITICAL: ADMIN_PASSWORD_HASH_B64 not configured');
+          throw new Error('Authentication system misconfigured');
+        }
         const hash = Buffer.from(hashB64, "base64").toString("utf8");
 
         const valid = await bcrypt.compare(password, hash);

@@ -6,6 +6,12 @@ These secrets need to be configured in Cloudflare for the Next.js dashboard to w
 
 Add these secrets to your Cloudflare Worker/Pages project:
 
+### ADMIN_USERNAME
+```
+admin
+```
+The admin username for login. Can be customized by setting this environment variable.
+
 ### ADMIN_PASSWORD_HASH_B64
 ```
 JDJiJDEwJEk4aGhySWJQMlhNTDFoZVhjYkhmYmU2LzlYL3NaYjJkaEhJZ25RWTdLdE1NbGRrcm8zTXFh
