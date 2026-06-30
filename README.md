@@ -30,15 +30,20 @@
 **Bot Worker:** https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev
 
 **Technology Stack:**
-- **Frontend 1:** GitHub Pages (Free)
-- **Frontend 2:** React 19.2.6 + Vite 8.0.12 + TypeScript
+- **Frontend:** Next.js 16.2.6 + React 19.2.4 + TypeScript (migrated from Vite)
 - **Backend:** Cloudflare Workers (Serverless)
 - **Database:** Cloudflare D1 (SQLite)
 - **Cache:** Cloudflare KV
 - **Storage:** Cloudflare R2
-- **Authentication:** Bearer token + Secret-based
+- **Authentication:** NextAuth (single-admin login)
 - **Real-time:** 30-second polling
 - **Mobile:** Responsive Design
+
+**Dashboard Migration (June 2026):**
+- Previous Vite dashboard has been retired and replaced with Next.js
+- Vite dashboard is available in git history at tag: `vite-dashboard-archive`
+- Next.js dashboard provides enhanced security with single-admin authentication
+- See `docs/plans/2026-06-30-nextjs-dashboard-migration-plan.md` for details
 
 ## 💬 CEO Command Interface
 
