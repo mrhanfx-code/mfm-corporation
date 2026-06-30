@@ -337,6 +337,31 @@
 
 ---
 
+## Dashboard Migration (June 2026)
+
+**Status:** Completed - Vite dashboard retired, Next.js dashboard deployed
+
+### Migration Summary
+- **Previous:** Vite-based dashboard (React 19.2.6 + Vite 8.0.12)
+- **Current:** Next.js 16.2.6 dashboard with NextAuth single-admin authentication
+- **Reason:** Enhanced security - only CEO Remy can access the dashboard
+- **Archive:** Vite dashboard available in git history at tag `vite-dashboard-archive`
+
+### Key Changes
+- Replaced Vite with Next.js using `@opennextjs/cloudflare` adapter
+- Added NextAuth for single-admin login (username: admin, password: F@rihan123)
+- Configured Cloudflare Workers deployment with nodejs_compat
+- See `docs/plans/2026-06-30-nextjs-dashboard-migration-plan.md` for full details
+
+### Required Cloudflare Secrets
+See `dashboard/CLOUDFLARE-SECRETS.md` for:
+- ADMIN_PASSWORD_HASH_B64
+- AUTH_SECRET
+- NEXTAUTH_URL
+- AUTH_URL
+
+---
+
 ## Document Quick Reference
 
 ### MFM Core Documents (6)
