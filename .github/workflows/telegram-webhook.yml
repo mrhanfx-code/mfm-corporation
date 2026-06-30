@@ -46,7 +46,7 @@ jobs:
           # Send response back to Telegram
           RESPONSE="🤖 MFM Corporation Bot: Message received - '$MESSAGE_TEXT'"
           
-          curl -X POST "https://api.telegram.org/bot8789903271:AAHsfvQLYJnun3-WBMVCDgfcMjszEYY5uuU/sendMessage" \
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -H "Content-Type: application/json" \
             -d "{\"chat_id\": $CHAT_ID, \"text\": \"$RESPONSE\"}"
         else
