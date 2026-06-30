@@ -1,17 +1,61 @@
 // Dashboard API Worker - Cloudflare Workers for MFM Corporation Mission Control
 // Provides REST API endpoints for dashboard frontend
 
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+import { validateToken, generateAccessToken } from '../core/jwt-auth.js';
 
 export async function handleDashboardAPI(request, env, path) {
   const url = new URL(request.url);
   
+  // CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': env.DASHBOARD_ORIGIN || 'https://mfm-corp.cc.cd',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+  };
+  
   try {
+    // POST /api/v1/dashboard/auth/login - JWT token generation
+    if (path === '/api/v1/dashboard/auth/login' && request.method === 'POST') {
+      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
+      let body;
+      try { body = await request.json(); } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      if (!body?.userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      const authorizedIds = (env.AUTHORIZED_USER_IDS || '').split(',').map(s => s.trim());
+      if (!authorizedIds.includes(String(body.userId))) {
+        return new Response(JSON.stringify({ error: 'Unauthorized user' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      try {
+        const accessToken = await generateAccessToken(body.userId, env);
+        return new Response(JSON.stringify({ accessToken, expiresIn: 900 }), { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: 'Token generation failed' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // Validate JWT token for protected endpoints
+    const token = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim();
+    if (path !== '/api/v1/dashboard/auth/login' && request.method !== 'OPTIONS') {
+      const payload = await validateToken(token, env);
+      if (!payload) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
     // GET /api/v1/dashboard/status - System health overview
     if (path === '/api/v1/dashboard/status' && request.method === 'GET') {
       return await getStatusReport(env, corsHeaders);

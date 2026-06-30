@@ -26,6 +26,7 @@ ENVIRONMENT = "production"
 AUTHORIZED_USER_IDS = "6847462500"
 CEO_EMAIL = "remy@mfm-corporation.com"
 USER_EMAIL = "muhdfarihan@gmail.com"
+DASHBOARD_ORIGIN = "https://mfm-corp.cc.cd"
 
 # Root-level KV binding
 [[kv_namespaces]]
