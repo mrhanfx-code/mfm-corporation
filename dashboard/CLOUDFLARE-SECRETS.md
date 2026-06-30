@@ -36,6 +36,18 @@ https://mfm-corp.cc.cd
 ```
 Alternative URL for NextAuth (same as NEXTAUTH_URL).
 
+### WORKERS_API_URL
+```
+https://mfm-corporation-api.mrhanhan-fx.workers.dev
+```
+The URL of the Workers API endpoint for chat functionality.
+
+### WORKERS_API_SECRET
+```
+YOUR_WORKERS_API_SECRET
+```
+The secret key for authenticating with the Workers API.
+
 ## How to Add Secrets
 
 Using Wrangler CLI:
@@ -51,6 +63,12 @@ wrangler secret put NEXTAUTH_URL
 
 wrangler secret put AUTH_URL
 # Paste: https://mfm-corp.cc.cd
+
+wrangler secret put WORKERS_API_URL
+# Paste: https://mfm-corporation-api.mrhanhan-fx.workers.dev
+
+wrangler secret put WORKERS_API_SECRET
+# Paste your Workers API secret
 ```
 
 Or add them via the Cloudflare Dashboard:
