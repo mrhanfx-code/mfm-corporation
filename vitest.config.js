@@ -2,30 +2,32 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: 'miniflare',
-    environmentOptions: {
-      bindings: {
-        KV: {
-          // Mock KV binding
-        },
-        db: {
-          // Mock D1 binding
-        },
-        'mfm-corporation-uploads': {
-          // Mock R2 binding
-        },
-        TASK_QUEUE: {
-          // Mock Queue binding
-        },
-      },
-      vars: {
-        ENVIRONMENT: 'test',
-        AUTHORIZED_USER_IDS: '123456789',
-      },
-    },
+    pool: '@cloudflare/vitest-pool-workers',
     poolOptions: {
-      threads: {
-        singleThread: true,
+      workers: {
+        singleWorker: true,
+        miniflareOptions: {
+          compatibilityDate: '2024-01-01',
+          compatibilityFlags: ['nodejs_compat'],
+          bindings: {
+            KV: {
+              // Mock KV binding
+            },
+            db: {
+              // Mock D1 binding
+            },
+            'mfm-corporation-uploads': {
+              // Mock R2 binding
+            },
+            TASK_QUEUE: {
+              // Mock Queue binding
+            },
+          },
+          vars: {
+            ENVIRONMENT: 'test',
+            AUTHORIZED_USER_IDS: '123456789',
+          },
+        },
       },
     },
     coverage: {
