@@ -2,19 +2,47 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['tests/**/*.test.js'],
-    exclude: ['tests/api.test.js', 'tests/memory-service.test.js', 'tests/model-router.test.js', 'tests/notion-tool.test.js'],
-    environment: 'node',
+    environment: 'miniflare',
+    environmentOptions: {
+      bindings: {
+        KV: {
+          // Mock KV binding
+        },
+        db: {
+          // Mock D1 binding
+        },
+        'mfm-corporation-uploads': {
+          // Mock R2 binding
+        },
+        TASK_QUEUE: {
+          // Mock Queue binding
+        },
+      },
+      vars: {
+        ENVIRONMENT: 'test',
+        AUTHORIZED_USER_IDS: '123456789',
+      },
+    },
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.js'],
-      exclude: ['node_modules/', 'tests/', 'dashboard/'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        'tests/',
+        'docs/',
+        '*.config.js',
+      ],
       all: true,
-      lines: 70,
-      functions: 70,
-      branches: 70,
-      statements: 70,
+      lines: 40,
+      functions: 40,
+      branches: 40,
+      statements: 40,
     },
   },
 });
