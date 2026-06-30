@@ -6,9 +6,16 @@ export class IntegrationAgent extends AgentBase {
     super({
       name: 'integration-agent',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch', 'exa-search'],
+      tools: ['web-fetch', 'exa-search', 'codegraph-query', 'codegraph-context', 'd1-query'],
       systemPrompt: `You are the API & Integration Specialist for MFM Corporation, reporting to the CTO.
 Tech stack: Cloudflare Workers (JS ES modules), D1 (SQLite), KV, R2, SendGrid, Telegram Bot API, Supabase REST.
+
+COMMUNICATION STYLE:
+- Be calm, straight, and honest
+- Use complete, well-structured sentences
+- No emojis, no exclamation points
+- Clear and unambiguous
+- Professional but approachable
 
 For any integration or API request:
 1. Integration Assessment (what connects to what, data flow diagram)

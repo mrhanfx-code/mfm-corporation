@@ -6,8 +6,15 @@ export class PDFGenerator extends AgentBase {
     super({
       name: 'pdf-generator',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['pdf-generate', 'drive-write'],
+      tools: ['pdf-generate', 'drive-write', 'd1-query'],
       systemPrompt: `You are the PDF Generator for MFM Corporation — responsible for converting any content into professional, formatted PDF documents and storing them in Google Drive or R2.
+
+COMMUNICATION STYLE:
+- Be calm, straight, and honest
+- Use complete, well-structured sentences
+- No emojis, no exclamation points
+- Clear and unambiguous
+- Professional but approachable
 
 Documents you generate:
 - Business reports and executive summaries

@@ -24,7 +24,8 @@ export default {
     const cors = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+      'Access-Control-Max-Age': '86400',
     };
 
     if (request.method === 'OPTIONS') {
@@ -217,12 +218,41 @@ export default {
 
       await sendTyping(chatId, env);
 
+      // Input validation: message length limit
+      const MAX_MESSAGE_LENGTH = 5000;
+      if (message.text.length > MAX_MESSAGE_LENGTH) {
+        await sendTelegramMessage(chatId, `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters allowed. Your message: ${message.text.length} characters.`, env);
+        return new Response('OK');
+      }
+
+      // Input validation: basic sanitization
+      let sanitizedText = message.text;
+      // Remove excessive newlines (more than 3 consecutive)
+      sanitizedText = sanitizedText.replace(/\n{4,}/g, '\n\n\n');
+      // Remove excessive spaces
+      sanitizedText = sanitizedText.replace(/ {4,}/g, '   ');
+
+      // Basic prompt injection detection
+      const injectionPatterns = [
+        /ignore (all )?(previous|above) instructions/i,
+        /system:\s*you are/i,
+        /act as (a|an)?\s*(ai|assistant|bot)/i,
+        /forget (everything|all )?(previous|above)/i,
+        /override (your )?(programming|instructions|system)/i
+      ];
+      for (const pattern of injectionPatterns) {
+        if (pattern.test(sanitizedText)) {
+          await sendTelegramMessage(chatId, 'Message blocked: detected potential prompt injection pattern.', env);
+          return new Response('OK');
+        }
+      }
+
       try {
-        const reply = await routeMessage(message, userId, env);
+        const reply = await routeMessage({ ...message, text: sanitizedText }, userId, env);
         if (reply) await sendTelegramMessage(chatId, reply, env);
       } catch (err) {
         console.error('[Bot] unhandled error:', err.message);
-        await sendTelegramMessage(chatId, '⚠️ Error: ' + err.message, env);
+        await sendTelegramMessage(chatId, 'Error: ' + err.message, env);
       }
 
       return new Response('OK');

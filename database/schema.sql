@@ -106,6 +106,129 @@ CREATE TABLE IF NOT EXISTS ceo_authentication (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Subagent Tasks Table for Parallel Execution
+CREATE TABLE IF NOT EXISTS subagent_tasks (
+    id TEXT PRIMARY KEY,
+    agent TEXT NOT NULL,
+    description TEXT NOT NULL,
+    instructions TEXT NOT NULL,
+    dependencies TEXT NOT NULL DEFAULT '[]',
+    priority INTEGER DEFAULT 2 CHECK (priority IN (1, 2, 3, 4)),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed', 'reviewing', 'approved', 'rejected')),
+    result TEXT,
+    error TEXT,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create Index for Subagent Tasks
+CREATE INDEX IF NOT EXISTS idx_subagent_tasks_status ON subagent_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_subagent_tasks_agent ON subagent_tasks(agent);
+CREATE INDEX IF NOT EXISTS idx_subagent_tasks_priority ON subagent_tasks(priority DESC);
+
+-- Error Logs Table for Error Recovery System
+CREATE TABLE IF NOT EXISTS error_logs (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL CHECK (category IN ('syntax', 'logic', 'runtime', 'network', 'data', 'external', 'unknown')),
+    severity TEXT NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low')),
+    error_message TEXT NOT NULL,
+    stack_trace TEXT,
+    agent TEXT,
+    tool TEXT,
+    context TEXT,
+    recovery_attempted BOOLEAN DEFAULT FALSE,
+    recovery_successful BOOLEAN,
+    solution TEXT,
+    resolved BOOLEAN DEFAULT FALSE,
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Create Indexes for Error Logs
+CREATE INDEX IF NOT EXISTS idx_error_logs_category ON error_logs(category);
+CREATE INDEX IF NOT EXISTS idx_error_logs_severity ON error_logs(severity);
+CREATE INDEX IF NOT EXISTS idx_error_logs_agent ON error_logs(agent);
+CREATE INDEX IF NOT EXISTS idx_error_logs_timestamp ON error_logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_error_logs_resolved ON error_logs(resolved);
+
+-- Team Handoffs Table for Team Coordination
+CREATE TABLE IF NOT EXISTS team_handoffs (
+    id TEXT PRIMARY KEY,
+    from_team TEXT NOT NULL,
+    to_team TEXT NOT NULL,
+    task_id TEXT,
+    task_description TEXT NOT NULL,
+    handoff_reason TEXT NOT NULL,
+    handoff_status TEXT DEFAULT 'pending' CHECK (handoff_status IN ('pending', 'accepted', 'rejected', 'completed', 'failed')),
+    quality_score DECIMAL(5,2),
+    acceptance_timestamp TIMESTAMP,
+    completion_timestamp TIMESTAMP,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create Indexes for Team Handoffs
+CREATE INDEX IF NOT EXISTS idx_team_handoffs_from_team ON team_handoffs(from_team);
+CREATE INDEX IF NOT EXISTS idx_team_handoffs_to_team ON team_handoffs(to_team);
+CREATE INDEX IF NOT EXISTS idx_team_handoffs_status ON team_handoffs(handoff_status);
+CREATE INDEX IF NOT EXISTS idx_team_handoffs_created_at ON team_handoffs(created_at);
+
+-- Handoff Errors Table for Error Detection
+CREATE TABLE IF NOT EXISTS handoff_errors (
+    id TEXT PRIMARY KEY,
+    handoff_id TEXT NOT NULL,
+    error_type TEXT NOT NULL,
+    severity TEXT NOT NULL CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+    message TEXT NOT NULL,
+    recommendation TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create Indexes for Handoff Errors
+CREATE INDEX IF NOT EXISTS idx_handoff_errors_handoff_id ON handoff_errors(handoff_id);
+CREATE INDEX IF NOT EXISTS idx_handoff_errors_type ON handoff_errors(error_type);
+CREATE INDEX IF NOT EXISTS idx_handoff_errors_severity ON handoff_errors(severity);
+CREATE INDEX IF NOT EXISTS idx_handoff_errors_created_at ON handoff_errors(created_at);
+
+-- Team Performance Metrics Table
+CREATE TABLE IF NOT EXISTS team_metrics (
+    id TEXT PRIMARY KEY,
+    team TEXT NOT NULL,
+    metric_category TEXT NOT NULL CHECK (metric_category IN ('productivity', 'quality', 'efficiency', 'collaboration', 'responsiveness', 'learning')),
+    metric_name TEXT NOT NULL,
+    metric_value DECIMAL(10,2) NOT NULL,
+    metric_unit TEXT,
+    target_value DECIMAL(10,2),
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Create Indexes for Team Metrics
+CREATE INDEX IF NOT EXISTS idx_team_metrics_team ON team_metrics(team);
+CREATE INDEX IF NOT EXISTS idx_team_metrics_category ON team_metrics(metric_category);
+CREATE INDEX IF NOT EXISTS idx_team_metrics_timestamp ON team_metrics(timestamp);
+CREATE INDEX IF NOT EXISTS idx_team_metrics_name ON team_metrics(metric_name);
+
+-- Metrics Alerts Table for Alerting System
+CREATE TABLE IF NOT EXISTS metrics_alerts (
+    id TEXT PRIMARY KEY,
+    metric_name TEXT NOT NULL,
+    metric_value DECIMAL(10,2) NOT NULL,
+    team TEXT NOT NULL,
+    severity TEXT NOT NULL CHECK (severity IN ('critical', 'warning', 'info')),
+    message TEXT NOT NULL,
+    threshold DECIMAL(10,2) NOT NULL,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'resolved', 'escalated')),
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create Indexes for Metrics Alerts
+CREATE INDEX IF NOT EXISTS idx_metrics_alerts_team ON metrics_alerts(team);
+CREATE INDEX IF NOT EXISTS idx_metrics_alerts_severity ON metrics_alerts(severity);
+CREATE INDEX IF NOT EXISTS idx_metrics_alerts_status ON metrics_alerts(status);
+CREATE INDEX IF NOT EXISTS idx_metrics_alerts_created_at ON metrics_alerts(created_at);
+
 -- System Settings Table
 CREATE TABLE IF NOT EXISTS system_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -206,6 +329,15 @@ CREATE INDEX IF NOT EXISTS idx_team_tasks_status ON team_tasks(status);
 CREATE INDEX IF NOT EXISTS idx_team_tasks_team ON team_tasks(team_id);
 CREATE INDEX IF NOT EXISTS idx_quality_issues_status ON quality_issues(status);
 CREATE INDEX IF NOT EXISTS idx_quality_issues_team ON quality_issues(team_id);
+
+-- Additional Performance Indexes for Sprint 5 Optimization
+CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
+CREATE INDEX IF NOT EXISTS idx_tasks_agent ON tasks(agent);
+CREATE INDEX IF NOT EXISTS idx_tasks_agent_created_at ON tasks(agent, created_at);
+CREATE INDEX IF NOT EXISTS idx_memory_keywords ON memory(keywords);
+CREATE INDEX IF NOT EXISTS idx_memory_agent ON memory(agent);
+CREATE INDEX IF NOT EXISTS idx_memory_agent_created_at ON memory(agent, created_at);
+CREATE INDEX IF NOT EXISTS idx_memory_pinned_created_at ON memory(pinned, created_at);
 
 -- Create Functions for Real-time Updates
 CREATE OR REPLACE FUNCTION update_team_status()

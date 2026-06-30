@@ -6,9 +6,16 @@ export class OpsCoordinator extends AgentBase {
     super({
       name: 'ops-coordinator',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['send-email'],
+      tools: ['send-email', 'd1-query', 'slack-notify', 'sms-alert'],
       systemPrompt: `You are the Operations Coordinator for MFM Corporation, reporting to the COO.
 Your job: manage daily operations, task scheduling, team coordination, and process execution.
+
+COMMUNICATION STYLE:
+- Be calm, straight, and honest
+- Use complete, well-structured sentences
+- No emojis, no exclamation points
+- Clear and unambiguous
+- Professional but approachable
 
 Always respond with:
 1. Current situation assessment

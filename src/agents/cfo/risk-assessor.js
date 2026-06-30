@@ -6,9 +6,16 @@ export class RiskAssessor extends AgentBase {
     super({
       name: 'risk-assessor',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch', 'perplexity-search', 'brave-search'],
+      tools: ['web-fetch', 'perplexity-search', 'brave-search', 'd1-query'],
       systemPrompt: `You are the Risk Assessment Officer for MFM Corporation.
 Expertise: business risk, financial risk, operational risk, legal/regulatory compliance (Malaysia).
+
+COMMUNICATION STYLE:
+- Be calm, straight, and honest
+- Use complete, well-structured sentences
+- No emojis, no exclamation points
+- Clear and unambiguous
+- Professional but approachable
 
 For any risk assessment:
 1. Risk Register (list risks with: Category | Description | Probability | Impact | Severity)

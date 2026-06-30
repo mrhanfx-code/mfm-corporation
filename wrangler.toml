@@ -2,6 +2,7 @@ name = "mfm-corporation-telegram-bot"
 main = "src/telegram-bot-agent.js"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+account_id = "7cd8ba743d303bcd9f4633ca0105bbdf"
 
 # Observability — applied at root level for all deployments
 [observability]
@@ -17,7 +18,7 @@ invocation_logs = true
 
 # Root-level vars — applies for all deployment methods
 # Required secrets (set via: wrangler secret put <NAME>):
-#   TELEGRAM_BOT_TOKEN, SENDGRID_API_KEY, WEBHOOK_SECRET, OPENROUTER_API_KEY
+#   TELEGRAM_BOT_TOKEN, RESEND_API_KEY, WEBHOOK_SECRET, OPENROUTER_API_KEY
 # Optional secrets (for MCP integrations):
 #   CEREBRAS_API_KEY, PERPLEXITY_API_KEY, BRAVE_API_KEY, GITHUB_TOKEN, NOTION_API_KEY
 #   DASHBOARD_SECRET (for /ask endpoint)
@@ -44,6 +45,11 @@ database_id = "91e8699c-2731-4f0d-8a09-9f9765e7e4cc"
 binding = "mfm-corporation-uploads"
 bucket_name = "mfm-corporation-uploads"
 
+# Backup R2 bucket
+[[r2_buckets]]
+binding = "mfm-corporation-backups"
+bucket_name = "mfm-corporation-backups"
+
 # Cloudflare Workers AI — image generation (free tier: 10,000 neurons/day)
 [ai]
 binding = "AI"
@@ -64,4 +70,21 @@ max_batch_timeout = 30
 # 10:00 UTC = 18:00 MYT — evening digest
 [triggers]
 crons = ["0 0 * * *", "0 5 * * *", "0 10 * * *"]
+
+# Additional scheduled tasks for reliability
+# Health check every 5 minutes
+# D1 backup daily at 02:00 UTC (10:00 MYT)
+# DLQ processing every 15 minutes
+# Anomaly detection every hour
+[[triggers.crons]]
+crons = "*/5 * * * *"
+
+[[triggers.crons]]
+crons = "0 2 * * *"
+
+[[triggers.crons]]
+crons = "*/15 * * * *"
+
+[[triggers.crons]]
+crons = "0 * * * *"
 

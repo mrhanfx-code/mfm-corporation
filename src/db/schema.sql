@@ -76,3 +76,32 @@ CREATE TABLE IF NOT EXISTS routing_scores (
   avg_score REAL DEFAULT 0,
   updated_at TEXT DEFAULT (datetime('now'))
 );
+
+-- model_usage: cost tracking per model and task type
+CREATE TABLE IF NOT EXISTS model_usage (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  model TEXT NOT NULL,
+  task_type TEXT NOT NULL,
+  prompt_tokens INTEGER DEFAULT 0,
+  completion_tokens INTEGER DEFAULT 0,
+  total_tokens INTEGER DEFAULT 0,
+  cost REAL DEFAULT 0,
+  timestamp INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_usage_timestamp ON model_usage(timestamp);
+CREATE INDEX IF NOT EXISTS idx_model_usage_model ON model_usage(model);
+
+-- memory: keyword-based memory system for agents
+CREATE TABLE IF NOT EXISTS memory (
+  id TEXT PRIMARY KEY,
+  content TEXT NOT NULL,
+  keywords TEXT NOT NULL,
+  agent TEXT DEFAULT 'general',
+  pinned INTEGER DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_memory_agent ON memory(agent);
+CREATE INDEX IF NOT EXISTS idx_memory_keywords ON memory(keywords);
+CREATE INDEX IF NOT EXISTS idx_memory_pinned ON memory(pinned, created_at);

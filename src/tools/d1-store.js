@@ -65,6 +65,119 @@ export async function clearMemory(agent, userId, env) {
   ).bind(agent, String(userId)).run();
 }
 
+// Subagent task coordination functions
+export async function saveSubagentTask(taskId, agent, description, instructions, dependencies, priority, env) {
+  if (!env.db) return null;
+  await env.db.prepare(
+    'INSERT INTO subagent_tasks (id, agent, description, instructions, dependencies, priority, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(taskId, agent, description, JSON.stringify(instructions), JSON.stringify(dependencies || []), priority, 'pending').run();
+  return taskId;
+}
+
+export async function updateSubagentTaskStatus(taskId, status, result, error, env) {
+  if (!env.db) return;
+  await env.db.prepare(
+    'UPDATE subagent_tasks SET status=?, result=?, error=?, updated_at=datetime("now") WHERE id=?'
+  ).bind(status, result ? JSON.stringify(result) : null, error, taskId).run();
+}
+
+export async function getSubagentTask(taskId, env) {
+  if (!env.db) return null;
+  const result = await env.db.prepare(
+    'SELECT * FROM subagent_tasks WHERE id=?'
+  ).bind(taskId).first();
+  if (result && result.dependencies) {
+    try {
+      result.dependencies = JSON.parse(result.dependencies);
+    } catch {
+      result.dependencies = null;
+    }
+  }
+  if (result && result.instructions) {
+    try {
+      result.instructions = JSON.parse(result.instructions);
+    } catch {
+      result.instructions = null;
+    }
+  }
+  if (result && result.result) {
+    try {
+      result.result = JSON.parse(result.result);
+    } catch {
+      result.result = null;
+    }
+  }
+  return result;
+}
+
+export async function getPendingSubagentTasks(env) {
+  if (!env.db) return [];
+  const result = await env.db.prepare(
+    'SELECT * FROM subagent_tasks WHERE status=? ORDER BY priority DESC, created_at ASC'
+  ).bind('pending').all();
+  return (result.results || []).map(task => {
+    if (task.dependencies) {
+      try {
+        task.dependencies = JSON.parse(task.dependencies);
+      } catch {
+        task.dependencies = null;
+      }
+    }
+    if (task.instructions) {
+      try {
+        task.instructions = JSON.parse(task.instructions);
+      } catch {
+        task.instructions = null;
+      }
+    }
+    return task;
+  });
+}
+
+export async function getSubagentTasksByAgent(agent, env) {
+  if (!env.db) return [];
+  const result = await env.db.prepare(
+    'SELECT * FROM subagent_tasks WHERE agent=? ORDER BY created_at DESC'
+  ).bind(agent).all();
+  return (result.results || []).map(task => {
+    if (task.dependencies) {
+      try {
+        task.dependencies = JSON.parse(task.dependencies);
+      } catch {
+        task.dependencies = null;
+      }
+    }
+    if (task.instructions) {
+      try {
+        task.instructions = JSON.parse(task.instructions);
+      } catch {
+        task.instructions = null;
+      }
+    }
+    if (task.result) {
+      try {
+        task.result = JSON.parse(task.result);
+      } catch {
+        task.result = null;
+      }
+    }
+    return task;
+  });
+}
+
+export async function getSubagentTaskStatistics(env) {
+  if (!env.db) return { total: 0, completed: 0, failed: 0, pending: 0 };
+  const result = await env.db.prepare(
+    'SELECT status, COUNT(*) as count FROM subagent_tasks GROUP BY status'
+  ).all();
+  const stats = { total: 0, completed: 0, failed: 0, pending: 0, running: 0 };
+  for (const row of (result.results || [])) {
+    stats.total += row.count;
+    stats[row.status] = row.count;
+  }
+  return stats;
+}
+
 export async function logDecision(agent, input, reasoning, decision, confidence, env) {
   if (!env.db) return;
   const id = uid();
@@ -152,14 +265,37 @@ export async function transitionTask(id, newStatus, env, extra = {}) {
   if (!env.db) return;
   const validStatuses = ['pending','analyzing','drafting','reviewing','approved','rejected','executing','completed','failed'];
   if (!validStatuses.includes(newStatus)) throw new Error(`Invalid task status: ${newStatus}`);
-  const fields = ['status = ?'];
-  const binds  = [newStatus];
-  if (extra.output !== undefined)       { fields.push('output = ?');        binds.push(extra.output); }
-  if (extra.quality_score !== undefined){ fields.push('quality_score = ?'); binds.push(extra.quality_score); }
-  if (extra.hitl_required !== undefined){ fields.push('hitl_required = ?'); binds.push(extra.hitl_required ? 1 : 0); }
-  if (['completed','failed','rejected'].includes(newStatus)) fields.push('completed_at = datetime(\'now\')');
+  
+  // Whitelist of allowed fields for updates
+  const allowedFields = ['output', 'quality_score', 'hitl_required'];
+  const updates = [];
+  const binds = [];
+  
+  // Always update status
+  updates.push('status = ?');
+  binds.push(newStatus);
+  
+  // Add optional fields from whitelist only
+  if (extra.output !== undefined && allowedFields.includes('output')) {
+    updates.push('output = ?');
+    binds.push(extra.output);
+  }
+  if (extra.quality_score !== undefined && allowedFields.includes('quality_score')) {
+    updates.push('quality_score = ?');
+    binds.push(extra.quality_score);
+  }
+  if (extra.hitl_required !== undefined && allowedFields.includes('hitl_required')) {
+    updates.push('hitl_required = ?');
+    binds.push(extra.hitl_required ? 1 : 0);
+  }
+  
+  // Add completed_at timestamp for terminal statuses
+  if (['completed','failed','rejected'].includes(newStatus)) {
+    updates.push('completed_at = datetime(\'now\')');
+  }
+  
   binds.push(id);
-  await env.db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).bind(...binds).run();
+  await env.db.prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
 }
 
 export async function getTopPerformingAgents(limit = 5, env) {

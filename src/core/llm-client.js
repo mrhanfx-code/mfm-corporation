@@ -3,6 +3,7 @@
 import { CircuitBreaker } from './circuit-breaker.js';
 import { logger } from './logger.js';
 import { alertLLMAllProvidersFailed, alertCircuitOpen } from '../tools/alerting.js';
+import { classifyComplexity, selectModel, calculateCost, recordModelUsage } from './model-router.js';
 
 const CEREBRAS_BASE  = 'https://api.cerebras.ai/v1/chat/completions';
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1/chat/completions';
@@ -21,7 +22,7 @@ export const MODELS = {
 const CEREBRAS_MODELS = new Set([MODELS.CEREBRAS_FAST, MODELS.CEREBRAS_LARGE]);
 
 async function callCerebras(model, messages, env, options = {}) {
-  const { maxTokens = 500, temperature = 0.7 } = options;
+  const { maxTokens = 500, temperature = 0.85 } = options;
   if (!env.CEREBRAS_API_KEY) throw new Error('No CEREBRAS_API_KEY');
 
   let lastErr;
@@ -115,11 +116,24 @@ function getCB(provider, kv) {
 }
 
 export async function callLLM(model, messages, env, options = {}) {
-  // Build ordered chain: requested model first, then Cerebras fast, then OR fallbacks
-  const isCerebras = CEREBRAS_MODELS.has(model);
+  // Model routing: classify complexity and select optimal model
+  const taskType = options.taskType || 'general';
+  const messageContent = messages.map(m => m.content).join(' ');
+  const complexity = classifyComplexity(messageContent);
+  const routedModel = selectModel(complexity, model);
+  
+  logger.info('llm-client', 'model_routed', { 
+    original: model, 
+    routed: routedModel, 
+    complexity,
+    taskType 
+  });
+
+  // Build ordered chain: routed model first, then fallbacks
+  const isCerebras = CEREBRAS_MODELS.has(routedModel);
   const chain = isCerebras
     ? [
-        { provider: 'cerebras', model },
+        { provider: 'cerebras', model: routedModel },
         { provider: 'cerebras', model: MODELS.CEREBRAS_FAST },
         { provider: 'openrouter', model: MODELS.OR_PRIMARY },
         { provider: 'openrouter', model: MODELS.OR_FAST },
@@ -127,7 +141,7 @@ export async function callLLM(model, messages, env, options = {}) {
       ]
     : [
         { provider: 'cerebras', model: MODELS.CEREBRAS_FAST },
-        { provider: 'openrouter', model },
+        { provider: 'openrouter', model: routedModel },
         { provider: 'openrouter', model: MODELS.OR_PRIMARY },
         { provider: 'openrouter', model: MODELS.OR_FAST },
         { provider: 'openrouter', model: MODELS.OR_FALLBACK }
@@ -159,18 +173,35 @@ export async function callLLM(model, messages, env, options = {}) {
         result = await callOpenRouter(currentModel, messages, env, options);
       }
       await cb.recordSuccess();
-      logger.info('llm-client', 'success', { provider, model: currentModel, latencyMs: Date.now() - start });
+      
+      // Calculate cost and record usage
+      const cost = calculateCost(currentModel, result.usage);
+      await recordModelUsage(env, currentModel, taskType, result.usage, cost);
+      
+      logger.info('llm-client', 'success', { 
+        provider, 
+        model: currentModel, 
+        latencyMs: Date.now() - start,
+        cost 
+      });
+      
       return result;
     } catch (err) {
       logger.warn('llm-client', 'provider_failed', { provider, model: currentModel, error: err.message });
       await cb.recordFailure();
       const cbStatus = await cb.getStatus();
-      if (cbStatus.open) alertCircuitOpen(`llm:${provider}`, env).catch(() => {});
+      if (cbStatus.open) {
+        alertCircuitOpen(`llm:${provider}`, env).catch(alertErr => {
+          logger.error('llm-client', 'circuit_alert_failed', { provider, error: alertErr.message });
+        });
+      }
       lastError = err;
     }
   }
 
-  alertLLMAllProvidersFailed(env).catch(() => {});
+  alertLLMAllProvidersFailed(env).catch(alertErr => {
+    logger.error('llm-client', 'all_providers_alert_failed', { error: alertErr.message });
+  });
   throw lastError || new Error('All LLM providers failed');
 }
 

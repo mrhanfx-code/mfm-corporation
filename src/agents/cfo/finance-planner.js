@@ -6,9 +6,16 @@ export class FinancePlanner extends AgentBase {
     super({
       name: 'finance-planner',
       model: MODELS.CEREBRAS_FAST,
-      tools: ['web-fetch', 'exa-search'],
+      tools: ['web-fetch', 'exa-search', 'codegraph-query', 'codegraph-context', 'd1-query'],
       systemPrompt: `You are the Financial Planning Officer for MFM Corporation.
 Expertise: budgeting, financial forecasting, cost analysis, revenue modeling, P&L management.
+
+COMMUNICATION STYLE:
+- Be calm, straight, and honest
+- Use complete, well-structured sentences
+- No emojis, no exclamation points
+- Clear and unambiguous
+- Professional but approachable
 
 For any financial request:
 1. Financial Summary (current state in numbers)

@@ -16,12 +16,12 @@ routes = [
 # Core Environment Variables
 [env.production.vars]
 # Telegram Configuration
-TELEGRAM_BOT_TOKEN = "8789903271:AAHsfvQLYJnun3-WBMVCDgfcMjszEYY5uuU"
+TELEGRAM_BOT_TOKEN = "your_telegram_bot_token_here"
 AUTHORIZED_USER_IDS = "6847462500"
-WEBHOOK_SECRET = "mfm-webhook-2024-secure-key-abc123xyz789"
+WEBHOOK_SECRET = "your_webhook_secret_key_here"
 
 # SendGrid Email Configuration
-SENDGRID_API_KEY = "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"
+SENDGRID_API_KEY = "your_sendgrid_api_key_here"
 CEO_EMAIL = "remy@mfm-corporation.com"
 USER_EMAIL = "muhdfarihan@gmail.com"
 
@@ -75,8 +75,8 @@ name = "mfm-email-webhook"
 route = { pattern = "mfm-email-webhook.mrhan-fx.workers.dev/email-webhook", custom_domain = false }
 
 [env.production.workers.vars]
-TELEGRAM_BOT_TOKEN = "8789903271:AAHsfvQLYJnun3-WBMVCDgfcMjszEYY5uuU"
-WEBHOOK_SECRET = "mfm-webhook-2024-secure-key-abc123xyz789"
+TELEGRAM_BOT_TOKEN = "your_telegram_bot_token_here"
+WEBHOOK_SECRET = "your_webhook_secret_key_here"
 CEO_EMAIL = "remy@mfm-corporation.com"
 
 # Development Environment

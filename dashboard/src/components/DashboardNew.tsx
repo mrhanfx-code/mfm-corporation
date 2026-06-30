@@ -6,6 +6,8 @@ import { ControlModal } from './ControlModal';
 import { ChatWindow } from './ChatWindow';
 import { LogsModal } from './LogsModal';
 import { SettingsPanel } from './SettingsPanel';
+import { CostTracking } from './CostTracking';
+import { MemoryManagement } from './MemoryManagement';
 
 interface Agent {
   id: string;
@@ -124,6 +126,7 @@ function LoginGate({ onAuth }: { onAuth: () => void }) {
 }
 
 export function DashboardNew() {
+  console.log('[DashboardNew] Component mounting');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [agents, setAgents] = useState<Agent[]>(FALLBACK_AGENTS);
@@ -136,8 +139,10 @@ export function DashboardNew() {
   const [logsModal, setLogsModal] = useState<{ open: boolean; agentId: string | null; title: string }>({ open: false, agentId: null, title: '' });
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [dataSource, setDataSource] = useState<'live' | 'mock'>('mock');
+  const [currentView, setCurrentView] = useState<'agents' | 'cost' | 'memory'>('agents');
 
   const fetchLiveData = useCallback(async () => {
+    console.log('[DashboardNew] Fetching live data');
     const secret = localStorage.getItem('mfm_secret') || '';
     if (!secret) return;
     try {
@@ -150,12 +155,14 @@ export function DashboardNew() {
       if (statusRes.ok) {
         const s = await statusRes.json();
         setSystemStatus(s);
+        console.log('[DashboardNew] System status loaded:', s);
       }
       if (agentsRes.ok) {
         const a = await agentsRes.json();
         if (a.agents?.length) {
           setAgents(mapApiAgents(a.agents));
           setDataSource('live');
+          console.log('[DashboardNew] Agents loaded:', a.agents.length);
         }
       }
       if (tasksRes.ok) {
@@ -169,9 +176,12 @@ export function DashboardNew() {
             lat: '—',
           }));
           setLogs(mapped);
+          console.log('[DashboardNew] Tasks loaded:', t.tasks.length);
         }
       }
-    } catch { /* fallback stays */ }
+    } catch (err) {
+      console.error('[DashboardNew] Error fetching live data:', err);
+    }
   }, []);
 
   useEffect(() => {
@@ -263,13 +273,20 @@ export function DashboardNew() {
     {
       label: 'Multi-Agent Teams',
       items: [
-        { label: 'All Agents', active: activeNav === 'All Agents', badgeActive: true },
+        { label: 'All Agents', active: currentView === 'agents', badgeActive: true },
         { label: 'Marketing Fleet', active: activeNav === 'Marketing Fleet', badgeActive: true },
         { label: 'Core Engineering', active: activeNav === 'Core Engineering', badgeActive: true },
         { label: 'Customer Success', active: activeNav === 'Customer Success', badgeActive: true },
         { label: 'Data Ingestion', active: activeNav === 'Data Ingestion', badgeActive: false },
         { label: 'Executive Strategy', active: activeNav === 'Executive Strategy', badgeActive: true }
-      ].map(item => ({ ...item, onClick: () => setActiveNav(item.label) }))
+      ].map(item => ({ ...item, onClick: () => { setActiveNav(item.label); setCurrentView('agents'); } }))
+    },
+    {
+      label: 'Analytics',
+      items: [
+        { label: 'Cost Tracking', active: currentView === 'cost', onClick: () => setCurrentView('cost') },
+        { label: 'Memory Management', active: currentView === 'memory', onClick: () => setCurrentView('memory') }
+      ]
     },
     {
       label: 'Global Controls',
@@ -375,35 +392,42 @@ export function DashboardNew() {
         </header>
 
         <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Active Agent Clusters</h2>
-              {dataSource === 'live' && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'color-mix(in oklch, var(--success) 15%, transparent)', color: 'var(--success)' }}>LIVE</span>}
-              {dataSource === 'mock' && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'color-mix(in oklch, var(--warning) 15%, transparent)', color: 'var(--warning)' }}>DEMO</span>}
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setViewMode('list')} style={{ width: '28px', height: '28px', padding: 0, borderRadius: 'var(--radius)', border: `1px solid ${viewMode === 'list' ? 'var(--accent)' : 'var(--border)'}`, background: viewMode === 'list' ? 'var(--accent)' : 'var(--surface)', color: viewMode === 'list' ? 'oklch(20% 0.02 255)' : 'var(--fg)', cursor: 'pointer' }} title="List view">≡</button>
-              <button onClick={() => setViewMode('grid')} style={{ width: '28px', height: '28px', padding: 0, borderRadius: 'var(--radius)', border: `1px solid ${viewMode === 'grid' ? 'var(--accent)' : 'var(--border)'}`, background: viewMode === 'grid' ? 'var(--accent)' : 'var(--surface)', color: viewMode === 'grid' ? 'oklch(20% 0.02 255)' : 'var(--fg)', cursor: 'pointer' }} title="Grid view">⊞</button>
-            </div>
-          </div>
+          {currentView === 'agents' && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Active Agent Clusters</h2>
+                  {dataSource === 'live' && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'color-mix(in oklch, var(--success) 15%, transparent)', color: 'var(--success)' }}>LIVE</span>}
+                  {dataSource === 'mock' && <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '99px', background: 'color-mix(in oklch, var(--warning) 15%, transparent)', color: 'var(--warning)' }}>DEMO</span>}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => setViewMode('list')} style={{ width: '28px', height: '28px', padding: 0, borderRadius: 'var(--radius)', border: `1px solid ${viewMode === 'list' ? 'var(--accent)' : 'var(--border)'}`, background: viewMode === 'list' ? 'var(--accent)' : 'var(--surface)', color: viewMode === 'list' ? 'oklch(20% 0.02 255)' : 'var(--fg)', cursor: 'pointer' }} title="List view">≡</button>
+                  <button onClick={() => setViewMode('grid')} style={{ width: '28px', height: '28px', padding: 0, borderRadius: 'var(--radius)', border: `1px solid ${viewMode === 'grid' ? 'var(--accent)' : 'var(--border)'}`, background: viewMode === 'grid' ? 'var(--accent)' : 'var(--surface)', color: viewMode === 'grid' ? 'oklch(20% 0.02 255)' : 'var(--fg)', cursor: 'pointer' }} title="Grid view">⊞</button>
+                </div>
+              </div>
 
-          <div style={{ 
-            display: viewMode === 'grid' ? 'grid' : 'flex',
-            flexDirection: viewMode === 'list' ? 'column' : undefined,
-            gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(280px, 1fr))' : undefined,
-            gap: '16px', 
-            marginBottom: '32px' 
-          }}>
-            {filteredAgents.map((agent) => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                onControl={handleControl}
-                onViewLogs={handleViewLogs}
-                onTerminate={handleTerminate}
-              />
-            ))}
-          </div>
+              <div style={{ 
+                display: viewMode === 'grid' ? 'grid' : 'flex',
+                flexDirection: viewMode === 'list' ? 'column' : undefined,
+                gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(280px, 1fr))' : undefined,
+                gap: '16px', 
+                marginBottom: '32px' 
+              }}>
+                {filteredAgents.map((agent) => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onControl={handleControl}
+                    onViewLogs={handleViewLogs}
+                    onTerminate={handleTerminate}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {currentView === 'cost' && <CostTracking />}
+          {currentView === 'memory' && <MemoryManagement />}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Telemetry Feed</h2>

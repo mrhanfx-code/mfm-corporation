@@ -25,15 +25,24 @@ async function ghFetch(path, method = 'GET', body = null, token) {
  * Create a new GitHub repository.
  */
 export async function createRepo(name, description, env, options = {}) {
-  if (!env.GITHUB_TOKEN) return { error: 'GITHUB_TOKEN not configured.' };
-  const { ok, data } = await ghFetch('/user/repos', 'POST', {
+  console.log(`[createRepo] Starting: name=${name}`);
+  if (!env.GITHUB_TOKEN) {
+    console.log('[createRepo] ERROR: GITHUB_TOKEN not configured');
+    return { error: 'GITHUB_TOKEN not configured.' };
+  }
+  const { ok, data, status } = await ghFetch('/user/repos', 'POST', {
     name,
     description: description || `Created by MFM Corporation AI`,
     private: options.private ?? true,
     auto_init: true,
     gitignore_template: options.gitignore || null,
   }, env.GITHUB_TOKEN);
-  if (!ok) return { error: data.message || 'Failed to create repo.' };
+  console.log(`[createRepo] GitHub API response: ok=${ok}, status=${status}, data=`, JSON.stringify(data));
+  if (!ok) {
+    console.log(`[createRepo] ERROR: Failed to create repo - ${data.message || 'Unknown error'}`);
+    return { error: data.message || 'Failed to create repo.' };
+  }
+  console.log(`[createRepo] SUCCESS: ${data.html_url}`);
   return { url: data.html_url, clone_url: data.clone_url, name: data.full_name };
 }
 
@@ -129,4 +138,48 @@ export async function listRepos(env, options = {}) {
   const { ok, data } = await ghFetch(`/user/repos?per_page=30&sort=updated`, 'GET', null, env.GITHUB_TOKEN);
   if (!ok) return { error: data.message || 'Failed to list repos.' };
   return { repos: data.map(r => ({ name: r.name, full_name: r.full_name, url: r.html_url, private: r.private, updated: r.updated_at })) };
+}
+
+/**
+ * Create repo and push files in one operation - bypasses LLM tool chaining issues.
+ * files: [{ path, content, message }]
+ */
+export async function createRepoAndPush(name, description, files, env, options = {}) {
+  console.log(`[createRepoAndPush] Starting: name=${name}, files=${files?.length}`);
+  
+  if (!env.GITHUB_TOKEN) {
+    console.log('[createRepoAndPush] ERROR: GITHUB_TOKEN not configured');
+    return { error: 'GITHUB_TOKEN not configured.' };
+  }
+  
+  try {
+    // Step 1: Create the repository WITHOUT auto_init to avoid conflicts
+    console.log('[createRepoAndPush] Step 1: Creating repo...');
+    const createOptions = { ...options, auto_init: false };
+    const createResult = await createRepo(name, description, env, createOptions);
+    console.log('[createRepoAndPush] Create result:', JSON.stringify(createResult));
+    
+    if (createResult.error) {
+      console.log('[createRepoAndPush] Create failed:', createResult.error);
+      return { error: `Create failed: ${createResult.error}` };
+    }
+    
+    // Step 2: Push all files
+    console.log('[createRepoAndPush] Step 2: Pushing files...');
+    const pushResult = await pushMultipleFiles(name, files, env, options);
+    console.log('[createRepoAndPush] Push result:', JSON.stringify(pushResult));
+    
+    const result = {
+      repo: createResult,
+      push: pushResult,
+      url: createResult.url,
+      files_pushed: pushResult.success,
+      files_failed: pushResult.failed
+    };
+    console.log('[createRepoAndPush] Final result:', JSON.stringify(result));
+    return result;
+  } catch (err) {
+    console.log('[createRepoAndPush] Exception:', err.message, err.stack);
+    return { error: `Exception: ${err.message}` };
+  }
 }

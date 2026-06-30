@@ -1,0 +1,6 @@
+name = "mfm-corporation-dashboard"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"
+
+[site]
+bucket = "mfm-corporation-dashboard"

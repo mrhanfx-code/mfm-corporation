@@ -43,3 +43,25 @@ export async function emitMetricsUpdate(env, agent, metrics) {
     timestamp: new Date().toISOString()
   });
 }
+
+export async function emitKnowledgeGraphUpdate(env, graphData) {
+  await emitDashboardEvent(env, 'knowledge_graph_update', {
+    graph: graphData,
+    timestamp: new Date().toISOString()
+  });
+}
+
+export async function emitAgentRelationshipUpdate(env, agentName, relationships) {
+  await emitDashboardEvent(env, 'agent_relationship_update', {
+    agent: agentName,
+    relationships,
+    timestamp: new Date().toISOString()
+  });
+}
+
+export async function emitGraphStatisticsUpdate(env, statistics) {
+  await emitDashboardEvent(env, 'graph_statistics_update', {
+    statistics,
+    timestamp: new Date().toISOString()
+  });
+}
