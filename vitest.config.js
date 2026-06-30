@@ -8,7 +8,7 @@ export default defineConfig({
         singleWorker: true,
         miniflareOptions: {
           compatibilityDate: '2024-01-01',
-          compatibilityFlags: ['nodejs_compat'],
+          compatibilityFlags: ['nodejs_compat', 'export_commonjs_default'],
           bindings: {
             KV: {
               // Mock KV binding
