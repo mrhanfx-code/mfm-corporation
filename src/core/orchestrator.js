@@ -459,9 +459,8 @@ export async function routeMessage(message, userId, env) {
     const output = header + finalResponse;
     syncCeoCommand({ command: text, userId, response: output }, env).catch(() => {});
     
-    // Emit dashboard event for task completion
+    // Emit dashboard event for agent status
     emitAgentStatus(env, routing.agent, 'active', text).catch(() => {});
-    emitTaskUpdate(env, taskId, 'completed', review.score).catch(() => {});
     
     return output;
 
