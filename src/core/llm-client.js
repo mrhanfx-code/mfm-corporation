@@ -16,7 +16,7 @@ export const MODELS = {
   OR_PRIMARY:     'openai/gpt-oss-120b:free',
   OR_FAST:        'openai/gpt-oss-20b:free',
   OR_FALLBACK:    'nvidia/nemotron-3-super-120b-a12b:free',
-  CF_AI:          '@cf/meta/llama-3.1-8b-instruct' // Cloudflare Workers AI
+  CF_AI:          '@cf/meta/llama-2-7b-chat-int8' // Cloudflare Workers AI
 };
 
 const CEREBRAS_MODELS = new Set([MODELS.CEREBRAS_FAST, MODELS.CEREBRAS_LARGE]);
