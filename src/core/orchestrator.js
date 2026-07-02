@@ -148,7 +148,7 @@ const PARALLEL_KEYWORDS = {
 };
 
 // Agents that ALWAYS require CEO approval before executing (irreversible external actions)
-const ALWAYS_APPROVE_AGENTS = new Set(['social-media-agent']);
+const ALWAYS_APPROVE_AGENTS = new Set(['social-media-agent', 'media-content-director', 'media-producer']);
 
 // Agents that require approval only on specific action keywords
 const APPROVAL_AGENTS = new Set(['customer-success-agent', 'ops-coordinator']);
