@@ -135,11 +135,12 @@ function parseToolCalls(text) {
 }
 
 export class AgentBase {
-  constructor({ name, model, systemPrompt, tools = [] }) {
+  constructor({ name, model, systemPrompt, tools = [], outputSchema = null }) {
     this.name = name;
     this.model = model;
     this.systemPrompt = systemPrompt;
     this.tools = tools;
+    this.outputSchema = outputSchema;
   }
 
   _validateInput(input) {
@@ -148,6 +149,17 @@ export class AgentBase {
     if (!cleaned) return { error: 'Empty input.' };
     if (cleaned.length > INPUT_MAX_CHARS) return { error: `Input too long (${cleaned.length} chars, max ${INPUT_MAX_CHARS}).` };
     return { cleaned };
+  }
+
+  _validateSchema(parsed, schema) {
+    if (!schema || typeof schema !== 'object') return true;
+    for (const key in schema) {
+      if (!(key in parsed)) {
+        logger.warn(this.name, 'schema_validation_failed', { missingKey: key });
+        return false;
+      }
+    }
+    return true;
   }
 
   async run(userMessage, userId, env, options = {}) {
@@ -199,6 +211,31 @@ export class AgentBase {
 
         result = await callLLM(this.model, loopMessages, env, options);
         logger.info(this.name, 'llm_call', { loop: i, provider: result?.provider, model: result?.model });
+
+        // Structured output validation with retry
+        if (this.outputSchema) {
+          for (let retry = 0; retry < 2; retry++) {
+            try {
+              const parsed = JSON.parse(result.content);
+              if (this._validateSchema(parsed, this.outputSchema)) {
+                result.content = JSON.stringify(parsed, null, 2);
+                logger.info(this.name, 'schema_validated', { retry });
+                break;
+              }
+            } catch (e) {
+              if (retry === 1) {
+                logger.error(this.name, 'schema_validation_failed', { error: e.message });
+                throw new Error('JSON validation failed after retries');
+              }
+              logger.warn(this.name, 'schema_validation_retry', { retry, error: e.message });
+              loopMessages.push({
+                role: 'user',
+                content: `Your response was not valid JSON matching the required schema. Please fix it. Schema: ${JSON.stringify(this.outputSchema)}`
+              });
+              result = await callLLM(this.model, loopMessages, env, options);
+            }
+          }
+        }
 
         const toolCalls = parseToolCalls(result.content);
         if (!toolCalls.length) break;
