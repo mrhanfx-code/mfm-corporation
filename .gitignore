@@ -19,3 +19,8 @@ Thumbs.db
 dark-art-3b9a.txt
 cloudflare_apeeaii.txt
 *.txt
+
+# Automation data volumes
+automation/n8n_data/
+automation/waha_data/
+automation/redis_data/

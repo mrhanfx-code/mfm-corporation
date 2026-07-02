@@ -246,7 +246,7 @@ export default {
           'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
           'Content-Disposition': `attachment; filename="${filename}"`,
           'Cache-Control': 'public, max-age=86400',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': env.DASHBOARD_ORIGIN || 'https://mfm-corp.cc.cd',
         }
       });
     }

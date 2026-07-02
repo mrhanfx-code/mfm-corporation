@@ -38,7 +38,7 @@ Alternative URL for NextAuth (same as NEXTAUTH_URL).
 
 ### WORKERS_API_URL
 ```
-https://mfm-corporation-api.mrhanhan-fx.workers.dev
+https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev
 ```
 The URL of the Workers API endpoint for chat functionality.
 
@@ -65,7 +65,7 @@ wrangler secret put AUTH_URL
 # Paste: https://mfm-corp.cc.cd
 
 wrangler secret put WORKERS_API_URL
-# Paste: https://mfm-corporation-api.mrhanhan-fx.workers.dev
+# Paste: https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev
 
 wrangler secret put WORKERS_API_SECRET
 # Paste your Workers API secret

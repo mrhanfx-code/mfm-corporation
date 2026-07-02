@@ -12,7 +12,7 @@ export default async function handleRequest(request) {
     return new Response(null, {
       status: 200,
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': 'https://mfm-corp.cc.cd',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type'
       }
@@ -28,7 +28,7 @@ export default async function handleRequest(request) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': 'https://mfm-corp.cc.cd'
       }
     });
   }
@@ -47,7 +47,7 @@ export default async function handleRequest(request) {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          'Access-Control-Allow-Origin': 'https://mfm-corp.cc.cd'
         }
       });
     } catch (error) {
@@ -56,7 +56,7 @@ export default async function handleRequest(request) {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          'Access-Control-Allow-Origin': 'https://mfm-corp.cc.cd'
         }
       });
     }

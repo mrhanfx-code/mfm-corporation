@@ -1,0 +1,691 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "middleware.ts",
+      "file_type": "code",
+      "source_file": "dashboard/src/middleware.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "src_middleware",
+      "community": 4,
+      "norm_label": "middleware.ts"
+    },
+    {
+      "label": "config",
+      "file_type": "code",
+      "source_file": "dashboard/src/middleware.ts",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "src_middleware_config",
+      "community": 4,
+      "norm_label": "config"
+    },
+    {
+      "label": "package.json",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L1",
+      "_origin": "ast",
+      "community": 3,
+      "norm_label": "package.json",
+      "id": "dashboard_package"
+    },
+    {
+      "label": "name",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L2",
+      "_origin": "ast",
+      "community": 3,
+      "norm_label": "name",
+      "id": "dashboard_package_name"
+    },
+    {
+      "label": "version",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L3",
+      "_origin": "ast",
+      "community": 3,
+      "norm_label": "version",
+      "id": "dashboard_package_version"
+    },
+    {
+      "label": "private",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L4",
+      "_origin": "ast",
+      "community": 3,
+      "norm_label": "private",
+      "id": "dashboard_package_private"
+    },
+    {
+      "label": "scripts",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L5",
+      "_origin": "ast",
+      "community": 2,
+      "norm_label": "scripts",
+      "id": "dashboard_package_scripts"
+    },
+    {
+      "label": "dev",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L6",
+      "_origin": "ast",
+      "community": 2,
+      "norm_label": "dev",
+      "id": "dashboard_package_scripts_dev"
+    },
+    {
+      "label": "build",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L7",
+      "_origin": "ast",
+      "community": 2,
+      "norm_label": "build",
+      "id": "dashboard_package_scripts_build"
+    },
+    {
+      "label": "start",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L8",
+      "_origin": "ast",
+      "community": 2,
+      "norm_label": "start",
+      "id": "dashboard_package_scripts_start"
+    },
+    {
+      "label": "lint",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L9",
+      "_origin": "ast",
+      "community": 2,
+      "norm_label": "lint",
+      "id": "dashboard_package_scripts_lint"
+    },
+    {
+      "label": "preview",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L10",
+      "_origin": "ast",
+      "community": 2,
+      "norm_label": "preview",
+      "id": "dashboard_package_scripts_preview"
+    },
+    {
+      "label": "deploy",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L11",
+      "_origin": "ast",
+      "community": 2,
+      "norm_label": "deploy",
+      "id": "dashboard_package_scripts_deploy"
+    },
+    {
+      "label": "cf-typegen",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L12",
+      "_origin": "ast",
+      "community": 2,
+      "norm_label": "cf-typegen",
+      "id": "dashboard_package_scripts_cf_typegen"
+    },
+    {
+      "label": "dependencies",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L14",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "dependencies",
+      "id": "dashboard_package_dependencies"
+    },
+    {
+      "label": "bcryptjs",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L15",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "bcryptjs",
+      "id": "dashboard_package_dependencies_bcryptjs"
+    },
+    {
+      "label": "clsx",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L16",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "clsx",
+      "id": "dashboard_package_dependencies_clsx"
+    },
+    {
+      "label": "next",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L17",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "next",
+      "id": "dashboard_package_dependencies_next"
+    },
+    {
+      "label": "next-auth",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L18",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "next-auth",
+      "id": "dashboard_package_dependencies_next_auth"
+    },
+    {
+      "label": "react",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L19",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "react",
+      "id": "dashboard_package_dependencies_react"
+    },
+    {
+      "label": "react-dom",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L20",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "react-dom",
+      "id": "dashboard_package_dependencies_react_dom"
+    },
+    {
+      "label": "server-only",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L21",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "server-only",
+      "id": "dashboard_package_dependencies_server_only"
+    },
+    {
+      "label": "tailwind-merge",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L22",
+      "_origin": "ast",
+      "community": 1,
+      "norm_label": "tailwind-merge",
+      "id": "dashboard_package_dependencies_tailwind_merge"
+    },
+    {
+      "label": "devDependencies",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L24",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "devdependencies",
+      "id": "dashboard_package_devdependencies"
+    },
+    {
+      "label": "@opennextjs/cloudflare",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L25",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "@opennextjs/cloudflare",
+      "id": "dashboard_package_devdependencies_opennextjs_cloudflare"
+    },
+    {
+      "label": "@tailwindcss/postcss",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L26",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "@tailwindcss/postcss",
+      "id": "dashboard_package_devdependencies_tailwindcss_postcss"
+    },
+    {
+      "label": "@types/bcryptjs",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L27",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "@types/bcryptjs",
+      "id": "dashboard_package_devdependencies_types_bcryptjs"
+    },
+    {
+      "label": "@types/node",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L28",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "@types/node",
+      "id": "dashboard_package_devdependencies_types_node"
+    },
+    {
+      "label": "@types/react",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L29",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "@types/react",
+      "id": "dashboard_package_devdependencies_types_react"
+    },
+    {
+      "label": "@types/react-dom",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L30",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "@types/react-dom",
+      "id": "dashboard_package_devdependencies_types_react_dom"
+    },
+    {
+      "label": "eslint",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L31",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "eslint",
+      "id": "dashboard_package_devdependencies_eslint"
+    },
+    {
+      "label": "eslint-config-next",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L32",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "eslint-config-next",
+      "id": "dashboard_package_devdependencies_eslint_config_next"
+    },
+    {
+      "label": "tailwindcss",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L33",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "tailwindcss",
+      "id": "dashboard_package_devdependencies_tailwindcss"
+    },
+    {
+      "label": "typescript",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L34",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "typescript",
+      "id": "dashboard_package_devdependencies_typescript"
+    },
+    {
+      "label": "wrangler",
+      "file_type": "code",
+      "source_file": "dashboard/package.json",
+      "source_location": "L35",
+      "_origin": "ast",
+      "community": 0,
+      "norm_label": "wrangler",
+      "id": "dashboard_package_devdependencies_wrangler"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/src/middleware.ts",
+      "source_location": "L23",
+      "weight": 1.0,
+      "source": "src_middleware",
+      "target": "src_middleware_config",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package",
+      "target": "dashboard_package_dependencies"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L24",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package",
+      "target": "dashboard_package_devdependencies"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package",
+      "target": "dashboard_package_name"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package",
+      "target": "dashboard_package_private"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L5",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package",
+      "target": "dashboard_package_scripts"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package",
+      "target": "dashboard_package_version"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_scripts",
+      "target": "dashboard_package_scripts_build"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L12",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_scripts",
+      "target": "dashboard_package_scripts_cf_typegen"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L11",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_scripts",
+      "target": "dashboard_package_scripts_deploy"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_scripts",
+      "target": "dashboard_package_scripts_dev"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L9",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_scripts",
+      "target": "dashboard_package_scripts_lint"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L10",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_scripts",
+      "target": "dashboard_package_scripts_preview"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L8",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_scripts",
+      "target": "dashboard_package_scripts_start"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L15",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_dependencies",
+      "target": "dashboard_package_dependencies_bcryptjs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L16",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_dependencies",
+      "target": "dashboard_package_dependencies_clsx"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L17",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_dependencies",
+      "target": "dashboard_package_dependencies_next"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L18",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_dependencies",
+      "target": "dashboard_package_dependencies_next_auth"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L19",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_dependencies",
+      "target": "dashboard_package_dependencies_react"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L20",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_dependencies",
+      "target": "dashboard_package_dependencies_react_dom"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L21",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_dependencies",
+      "target": "dashboard_package_dependencies_server_only"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L22",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_dependencies",
+      "target": "dashboard_package_dependencies_tailwind_merge"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L31",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_eslint"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L32",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_eslint_config_next"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L25",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_opennextjs_cloudflare"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L33",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_tailwindcss"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L26",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_tailwindcss_postcss"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L27",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_types_bcryptjs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L28",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_types_node"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L29",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_types_react"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L30",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_types_react_dom"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L34",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_typescript"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "dashboard/package.json",
+      "source_location": "L35",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "dashboard_package_devdependencies",
+      "target": "dashboard_package_devdependencies_wrangler"
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "aaeadba92917daac63a954a4507ad17a0902d1c5"
+}
