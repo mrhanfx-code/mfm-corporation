@@ -9,6 +9,11 @@ CREATE TABLE IF NOT EXISTS tasks (
   output TEXT,
   status TEXT DEFAULT 'pending'
     CHECK(status IN ('pending','analyzing','drafting','reviewing','approved','rejected','executing','completed','failed')),
+  state TEXT DEFAULT 'pending'
+    CHECK(state IN ('pending','analyzing','drafting','reviewing','approved','rejected','executing','completed','failed')),
+  state_history TEXT DEFAULT '[]',
+  content_type TEXT DEFAULT 'general'
+    CHECK(content_type IN ('general','video','social_publish','email')),
   quality_score REAL,
   hitl_required INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now')),
@@ -20,6 +25,9 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 
 -- Migration for existing databases (run once):
 -- ALTER TABLE tasks ADD COLUMN hitl_required INTEGER DEFAULT 0;
+-- ALTER TABLE tasks ADD COLUMN state TEXT DEFAULT 'pending' CHECK(state IN ('pending','analyzing','drafting','reviewing','approved','rejected','executing','completed','failed'));
+-- ALTER TABLE tasks ADD COLUMN state_history TEXT DEFAULT '[]';
+-- ALTER TABLE tasks ADD COLUMN content_type TEXT DEFAULT 'general' CHECK(content_type IN ('general','video','social_publish','email'));
 
 -- agent_memory: per-user conversation history for each agent (pruned to 100 rows)
 CREATE TABLE IF NOT EXISTS agent_memory (

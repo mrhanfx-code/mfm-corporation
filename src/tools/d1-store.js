@@ -162,6 +162,37 @@ export async function transitionTask(id, newStatus, env, extra = {}) {
   await env.db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).bind(...binds).run();
 }
 
+export async function transitionTaskState(id, newState, env, extra = {}) {
+  if (!env.db) return;
+  const validStates = ['pending','analyzing','drafting','reviewing','approved','rejected','executing','completed','failed'];
+  if (!validStates.includes(newState)) throw new Error(`Invalid task state: ${newState}`);
+  
+  const task = await getTaskById(id, env);
+  if (!task) throw new Error(`Task not found: ${id}`);
+  
+  const currentHistory = JSON.parse(task.state_history || '[]');
+  currentHistory.push({
+    from: task.state || 'pending',
+    to: newState,
+    at: new Date().toISOString()
+  });
+  
+  const fields = ['state = ?', 'state_history = ?'];
+  const binds  = [newState, JSON.stringify(currentHistory)];
+  if (extra.content_type !== undefined) { fields.push('content_type = ?'); binds.push(extra.content_type); }
+  binds.push(id);
+  await env.db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).bind(...binds).run();
+}
+
+export async function setTaskContentType(id, contentType, env) {
+  if (!env.db) return;
+  const validTypes = ['general','video','social_publish','email'];
+  if (!validTypes.includes(contentType)) throw new Error(`Invalid content type: ${contentType}`);
+  await env.db.prepare(
+    'UPDATE tasks SET content_type = ? WHERE id = ?'
+  ).bind(contentType, id).run();
+}
+
 export async function getTopPerformingAgents(limit = 5, env) {
   if (!env.db) return [];
   const result = await env.db.prepare(`
