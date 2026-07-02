@@ -363,6 +363,16 @@ export default {
   async queue(batch, env) {
     for (const msg of batch.messages) {
       try {
+        // Check if this is a video rendering job
+        if (msg.body && msg.body.jobId && msg.body.params) {
+          console.log('[Queue Consumer] Processing video rendering job:', msg.id);
+          const result = await processQueuedJob(msg, env);
+          console.log('[Queue Consumer] Video job processed successfully:', result.jobId);
+          msg.ack();
+          continue;
+        }
+
+        // Handle regular async tasks
         const { chatId, userId, text, taskType } = msg.body;
         if (!chatId || !userId || !text) { msg.ack(); continue; }
 
@@ -439,26 +449,6 @@ export default {
     } catch (err) {
       console.error('[Scheduled] error:', err.message);
       await sendTelegramMessage(ceoId, '⚠️ Scheduled briefing failed: ' + err.message, env);
-    }
-  },
-
-  async queue(batch, env, ctx) {
-    for (const message of batch.messages) {
-      try {
-        console.log('[Queue Consumer] Processing message:', message.id);
-        
-        // Process video rendering jobs
-        const result = await processQueuedJob(message, env);
-        console.log('[Queue Consumer] Job processed successfully:', result.jobId);
-        
-        // Acknowledge message as processed
-        message.ack();
-      } catch (error) {
-        console.error('[Queue Consumer] Job processing failed:', error.message);
-        
-        // Retry message (will be retried automatically by Cloudflare Queue)
-        message.retry();
-      }
     }
   }
 };
