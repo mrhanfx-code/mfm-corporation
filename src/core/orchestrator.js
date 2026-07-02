@@ -165,9 +165,20 @@ function requiresApproval(agentName, text) {
 function detectContentType(agentName, text) {
   const lower = text.toLowerCase();
   
-  // Video-related content - route to automated rendering
+  // Video prompt generation (manual workflow) - route to media-producer
+  if (lower.includes('video prompt') || 
+      lower.includes('create video prompt') || 
+      lower.includes('generate video prompt') ||
+      lower.includes('video prompts')) {
+    return 'video_prompt';
+  }
+  
+  // Video generation (automated rendering) - route to media-content-director
   if (agentName === 'media-content-director' || 
-      lower.includes('video') || 
+      lower.includes('generate video') || 
+      lower.includes('create video') ||
+      lower.includes('make video') ||
+      lower.includes('video') && !lower.includes('prompt') ||
       lower.includes('reel') || 
       lower.includes('tiktok') && lower.includes('video')) {
     return 'video';
