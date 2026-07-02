@@ -13,7 +13,6 @@ import { listCalendarEvents, createCalendarEvent, findFreeSlot } from '../tools/
 import { listDriveFolder, readDriveFile, writeDriveFile, searchDriveFiles } from '../tools/google-drive-tool.js';
 import { generatePDF, generateReportPDF } from '../tools/pdf-tool.js';
 import { sendSMS } from '../tools/sms-tool.js';
-import { emitAgentStatus, emitTaskUpdate } from '../tools/dashboard-events.js';
 import { createRepo, pushFile, listRepos } from '../tools/github-tool.js';
 
 const INPUT_MAX_CHARS    = 4000;
@@ -172,9 +171,6 @@ export class AgentBase {
       return `⚠️ ${validation.error}`;
     }
     const cleanMessage = validation.cleaned;
-
-    // Emit agent status to dashboard
-    emitAgentStatus(env, this.name, 'active', cleanMessage).catch(() => {});
 
     // Per-agent rate limiting: max 20 req/min per agent
     if (env.KV) {
