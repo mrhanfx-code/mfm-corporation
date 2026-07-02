@@ -1,6 +1,6 @@
 // AgentBase — base class for all MFM Corporation agents
 
-import { callLLM } from './llm-client.js';
+import { callLLM, parseJSON } from './llm-client.js';
 import { logger } from './logger.js';
 import { saveMemory, getMemory, saveTask, completeTask, updateTaskScore, logDecision, updateMetrics, clearMemory as d1ClearMemory } from '../tools/d1-store.js';
 import { fetchWebContent } from '../tools/web-fetch.js';
@@ -216,7 +216,10 @@ export class AgentBase {
         if (this.outputSchema) {
           for (let retry = 0; retry < 2; retry++) {
             try {
-              const parsed = JSON.parse(result.content);
+              const parsed = parseJSON(result.content);
+              if (!parsed) {
+                throw new Error('No valid JSON found in response');
+              }
               if (this._validateSchema(parsed, this.outputSchema)) {
                 result.content = JSON.stringify(parsed, null, 2);
                 logger.info(this.name, 'schema_validated', { retry });
