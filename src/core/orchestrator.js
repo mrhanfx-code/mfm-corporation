@@ -4,7 +4,7 @@ import { callLLM, parseJSON, MODELS } from './llm-client.js';
 import { alertLowQualityScore } from '../tools/alerting.js';
 import { CircuitBreaker } from './circuit-breaker.js';
 import { runPanel, PANELS, shouldUsePanel, pickPanel } from './multi-agent-panel.js';
-import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory, getTopPerformingAgents, updateRoutingScore } from '../tools/d1-store.js';
+import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory, getTopPerformingAgents, updateRoutingScore, setTaskContentType } from '../tools/d1-store.js';
 import { nl2sqlQuery } from '../tools/nl2sql-tool.js';
 import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js';
 import { reviewOutput } from './quality-reviewer.js';
@@ -157,6 +157,36 @@ function requiresApproval(agentName, text) {
   if (!APPROVAL_AGENTS.has(agentName)) return false;
   const lower = text.toLowerCase();
   return APPROVAL_KEYWORDS.some(k => lower.includes(k));
+}
+
+function detectContentType(agentName, text) {
+  const lower = text.toLowerCase();
+  
+  // Video-related content
+  if (agentName === 'media-producer' || 
+      lower.includes('video') || 
+      lower.includes('reel') || 
+      lower.includes('tiktok') && lower.includes('video')) {
+    return 'video';
+  }
+  
+  // Social media publishing
+  if (ALWAYS_APPROVE_AGENTS.has(agentName) || 
+      lower.includes('post to') || 
+      lower.includes('post on') || 
+      lower.includes('publish')) {
+    return 'social_publish';
+  }
+  
+  // Email-related content
+  if (agentName === 'email-marketing-agent' || 
+      lower.includes('send email') || 
+      lower.includes('email to') || 
+      lower.includes('newsletter')) {
+    return 'email';
+  }
+  
+  return 'general';
 }
 
 function detectParallelIntent(text) {
@@ -365,18 +395,30 @@ export async function routeMessage(message, userId, env) {
       const agent = new AgentClass();
       const draft = await agent.run(text, userId, env, { ...agentOptions, draftMode: true });
 
+      const contentType = detectContentType(routing.agent, text);
+
       if (env.KV) {
         await env.KV.put(
           `pending:${userId}`,
-          JSON.stringify({ text, agentName: routing.agent }),
+          JSON.stringify({ text, agentName: routing.agent, contentType }),
           { expirationTtl: 3600 }
         );
       }
 
       const isSocial = ALWAYS_APPROVE_AGENTS.has(routing.agent);
-      const approvalMsg = isSocial
-        ? `📱 *[SOCIAL MEDIA DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Nothing has been posted yet.*\n✅ Reply */approve* to post now  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`
-        : `📋 *[DRAFT — ${routing.agent.replace(/-/g, ' ').toUpperCase()}]*\n\n${draft}\n\n---\n✅ Reply */approve* to execute  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_`;
+      const isVideo = contentType === 'video';
+      const isEmail = contentType === 'email';
+      
+      let approvalMsg;
+      if (isSocial) {
+        approvalMsg = `📱 *[SOCIAL MEDIA DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Nothing has been posted yet.*\n✅ Reply */approve* to post now  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`;
+      } else if (isVideo) {
+        approvalMsg = `🎬 *[VIDEO DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Video rendering will trigger after approval.*\n✅ Reply */approve* to render  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`;
+      } else if (isEmail) {
+        approvalMsg = `📧 *[EMAIL DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Email will be sent after approval.*\n✅ Reply */approve* to send  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`;
+      } else {
+        approvalMsg = `📋 *[DRAFT — ${routing.agent.replace(/-/g, ' ').toUpperCase()}]*\n\n${draft}\n\n---\n✅ Reply */approve* to execute  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_`;
+      }
       return approvalMsg;
     }
 
