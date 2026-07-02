@@ -564,6 +564,7 @@ async function handleSlashCommand(text, userId, env) {
           const jobId = `render_${Date.now()}`;
           await queueRenderingJob({
             jobId,
+            userId,
             params: {
               model: 'fal-ai/flux-schnell/v1.1',
               storyboard: storyboard.storyboard,

@@ -1,5 +1,7 @@
 // fal.ai Wrapper — video rendering API wrapper with Queue support
 
+import { sendTelegramMessage } from './telegram-tool.js';
+
 const FAL_API_BASE = 'https://queue.fal.run';
 
 /**
@@ -167,6 +169,7 @@ export async function queueRenderingJob(jobData, env) {
  */
 export async function processQueuedJob(message, env) {
   const jobData = JSON.parse(message.body);
+  const { userId } = jobData;
   
   try {
     // Submit to fal.ai
@@ -187,22 +190,50 @@ export async function processQueuedJob(message, env) {
       const result = await getJobResult(submission.requestId, env);
       
       // Store result in R2
+      let r2Url = result.videoUrl;
       if (env.mfm_corporation_uploads && result.videoUrl) {
-        await storeVideoInR2(result.videoUrl, jobData.jobId, env);
+        const r2Key = await storeVideoInR2(result.videoUrl, jobData.jobId, env);
+        r2Url = `https://pub-${env.mfm_corporation_uploads.httpMetadata.hostId}.r2.dev/${r2Key}`;
+      }
+      
+      // Send success notification
+      if (userId) {
+        await sendTelegramMessage(userId, 
+          `✅ *Video Rendering Complete*\n\n🎬 Job ID: ${jobData.jobId}\n⏱️ Duration: ${result.duration}s\n📦 Size: ${(result.fileSize / 1024 / 1024).toFixed(2)}MB\n\n🔗 [Download Video](${r2Url})\n\nYour video is ready for use!`, 
+          env
+        ).catch(err => console.error('[Notification] Failed to send success message:', err.message));
       }
       
       return {
         success: true,
         jobId: jobData.jobId,
-        videoUrl: result.videoUrl,
+        videoUrl: r2Url,
         thumbnailUrl: result.thumbnailUrl,
         completedAt: result.completedAt
       };
     } else {
-      throw new Error(`Job failed with status: ${status.status}`);
+      const errorMsg = `Job failed with status: ${status.status}${status.error ? ` - ${status.error}` : ''}`;
+      
+      // Send failure notification
+      if (userId) {
+        await sendTelegramMessage(userId,
+          `❌ *Video Rendering Failed*\n\n🎬 Job ID: ${jobData.jobId}\n📊 Status: ${status.status}\n⚠️ Error: ${errorMsg}\n\nPlease try again or check fal.ai status.`,
+          env
+        ).catch(err => console.error('[Notification] Failed to send failure message:', err.message));
+      }
+      
+      throw new Error(errorMsg);
     }
   } catch (error) {
     console.error('[Queue] Job processing failed:', error.message);
+    
+    // Send failure notification for unexpected errors
+    if (userId) {
+      await sendTelegramMessage(userId,
+        `❌ *Video Rendering Error*\n\n🎬 Job ID: ${jobData.jobId}\n⚠️ Error: ${error.message}\n\nAn unexpected error occurred during processing.`,
+        env
+      ).catch(err => console.error('[Notification] Failed to send error message:', err.message));
+    }
     
     // Send to dead letter queue if configured
     if (env.TASK_QUEUE) {
