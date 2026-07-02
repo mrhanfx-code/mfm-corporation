@@ -4,6 +4,7 @@
 import { routeMessage } from './core/orchestrator.js';
 import { sendTelegramMessage, sendTyping } from './tools/telegram-tool.js';
 import { handleDashboardAPI } from './dashboard/dashboard-worker.js';
+import { processQueuedJob } from './tools/fal-ai-wrapper.js';
 
 const REQUIRED = ['TELEGRAM_BOT_TOKEN', 'WEBHOOK_SECRET', 'OPENROUTER_API_KEY'];
 
@@ -438,6 +439,26 @@ export default {
     } catch (err) {
       console.error('[Scheduled] error:', err.message);
       await sendTelegramMessage(ceoId, '⚠️ Scheduled briefing failed: ' + err.message, env);
+    }
+  },
+
+  async queue(batch, env, ctx) {
+    for (const message of batch.messages) {
+      try {
+        console.log('[Queue Consumer] Processing message:', message.id);
+        
+        // Process video rendering jobs
+        const result = await processQueuedJob(message, env);
+        console.log('[Queue Consumer] Job processed successfully:', result.jobId);
+        
+        // Acknowledge message as processed
+        message.ack();
+      } catch (error) {
+        console.error('[Queue Consumer] Job processing failed:', error.message);
+        
+        // Retry message (will be retried automatically by Cloudflare Queue)
+        message.retry();
+      }
     }
   }
 };
