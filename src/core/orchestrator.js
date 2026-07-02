@@ -148,7 +148,7 @@ const PARALLEL_KEYWORDS = {
 };
 
 // Agents that ALWAYS require CEO approval before executing (irreversible external actions)
-const ALWAYS_APPROVE_AGENTS = new Set(['social-media-agent', 'media-content-director', 'media-producer']);
+const ALWAYS_APPROVE_AGENTS = new Set(['social-media-agent', 'media-content-director']);
 
 // Agents that require approval only on specific action keywords
 const APPROVAL_AGENTS = new Set(['customer-success-agent', 'ops-coordinator']);
@@ -165,8 +165,8 @@ function requiresApproval(agentName, text) {
 function detectContentType(agentName, text) {
   const lower = text.toLowerCase();
   
-  // Video-related content
-  if (agentName === 'media-producer' || 
+  // Video-related content - route to automated rendering
+  if (agentName === 'media-content-director' || 
       lower.includes('video') || 
       lower.includes('reel') || 
       lower.includes('tiktok') && lower.includes('video')) {

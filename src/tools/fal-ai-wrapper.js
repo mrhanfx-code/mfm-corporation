@@ -193,7 +193,8 @@ export async function processQueuedJob(message, env) {
       let r2Url = result.videoUrl;
       if (env.mfm_corporation_uploads && result.videoUrl) {
         const r2Key = await storeVideoInR2(result.videoUrl, jobData.jobId, env);
-        r2Url = `https://pub-${env.mfm_corporation_uploads.httpMetadata.hostId}.r2.dev/${r2Key}`;
+        // Use correct R2 public URL pattern
+        r2Url = `https://pub-${env.mfm_corporation_uploads.bucketId}.r2.dev/${r2Key}`;
       }
       
       // Send success notification
