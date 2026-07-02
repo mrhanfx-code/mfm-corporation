@@ -36,6 +36,7 @@ import { QAEngineer } from '../agents/cto/qa-engineer.js';
 import { DatabaseSpecialist } from '../agents/cto/database-specialist.js';
 import { CloudEngineer } from '../agents/cto/cloud-engineer.js';
 import { ContentWriter } from '../agents/cmo/content-writer.js';
+import { MediaContentDirector } from '../agents/cmo/media-content-director.js';
 import { MediaProducer } from '../agents/cmo/media-producer.js';
 import { MarketAnalyst } from '../agents/cmo/market-analyst.js';
 import { CustomerSuccessAgent } from '../agents/cmo/customer-success-agent.js';
@@ -56,6 +57,7 @@ import { DataAnalyst } from '../agents/cino/data-analyst.js';
 import { LegalAdvisor } from '../agents/clo/legal-advisor.js';
 import { generateImage, formatImageResponse } from '../tools/image-tool.js';
 import { createRepo, pushFile, pushMultipleFiles, listRepos, triggerWorkflow } from '../tools/github-tool.js';
+import { submitRenderingJob, queueRenderingJob, estimateCost } from '../tools/fal-ai-wrapper.js';
 
 const ORCHESTRATOR_MODEL = MODELS.CEREBRAS_FAST;
 
@@ -75,7 +77,7 @@ COMPANY IDENTITY (memorise this — never invent alternative descriptions):
 Respond ONLY with valid JSON:
 {
   "department": "coo|cto|cmo|cfo|cino|clo|direct",
-  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct",
+  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|media-content-director|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct",
   "task_type": "brief task description",
   "urgency": "high|medium|low",
   "reasoning": "one sentence"
@@ -106,6 +108,7 @@ Routing rules:
 - cto/database-specialist: D1 schema design, query optimisation, migrations, data governance
 - cto/cloud-engineer: Cloudflare platform, wrangler, edge deployment, free tier limits
 - cmo/content-writer: write emails, posts, announcements, reports, copy
+- cmo/media-content-director: storyboard generation, structured video content planning, platform-specific captions, rendering instructions
 - cmo/market-analyst: market research, competitor analysis, industry news
 - cmo/customer-success-agent: client relations, customer feedback, retention, support
 - cmo/social-media-agent: post to Facebook, Instagram, TikTok; social media content, captions, hashtags, scheduling
@@ -231,6 +234,7 @@ const PANEL_AGENT_REGISTRY = {
   'tech-advisor':       () => new TechAdvisor(),
   'security-auditor':   () => new SecurityAuditor(),
   'content-writer':     () => new ContentWriter(),
+  'media-content-director': () => new MediaContentDirector(),
   'market-analyst':     () => new MarketAnalyst(),
   'media-producer':     () => new MediaProducer(),
   'innovation-analyst': () => new InnovationAnalyst(),
@@ -283,6 +287,7 @@ const AGENT_MAP = {
   'database-specialist': DatabaseSpecialist,
   'cloud-engineer': CloudEngineer,
   'content-writer': ContentWriter,
+  'media-content-director': MediaContentDirector,
   'market-analyst': MarketAnalyst,
   'customer-success-agent': CustomerSuccessAgent,
   'social-media-agent': SocialMediaAgent,
@@ -533,7 +538,7 @@ async function handleSlashCommand(text, userId, env) {
       if (!env.KV) return '⚠️ KV not configured.';
       const raw = await env.KV.get(`pending:${userId}`);
       if (!raw) return '⚠️ No pending action found. It may have expired (1h TTL).';
-      const { text: pendingText, agentName, editCount, lastEdit } = JSON.parse(raw);
+      const { text: pendingText, agentName, contentType, editCount, lastEdit } = JSON.parse(raw);
       await env.KV.delete(`pending:${userId}`);
       const AgentClass = AGENT_MAP[agentName];
       if (!AgentClass) return '⚠️ Agent not found for pending action.';
@@ -543,9 +548,36 @@ async function handleSlashCommand(text, userId, env) {
       if (editCount && editCount > 0) {
         runText = pendingText + '\n\nAdditional instructions from CEO (edit #' + editCount + '): ' + lastEdit;
       }
+      
+      // Execute the agent
       const result = await agentInst.run(runText, userId, env, { contextCard });
       const review = await reviewOutput(agentName, 'approved-action', result, env);
       agentInst.finalizeScore(review.score, env).catch(() => {});
+      
+      // If video content, trigger fal.ai rendering
+      if (contentType === 'video' && agentName === 'media-content-director') {
+        try {
+          const storyboard = JSON.parse(result);
+          const totalDuration = storyboard.storyboard.reduce((sum, scene) => sum + scene.duration_seconds, 0);
+          const costEstimate = estimateCost('fal-ai/flux-schnell/v1.1', totalDuration);
+          
+          // Queue rendering job
+          const jobId = `render_${Date.now()}`;
+          await queueRenderingJob({
+            jobId,
+            params: {
+              model: 'fal-ai/flux-schnell/v1.1',
+              storyboard: storyboard.storyboard,
+              rendering_instructions: storyboard.rendering_instructions
+            }
+          }, env);
+          
+          return `✅ *Approved & Queued for Rendering — [MEDIA CONTENT DIRECTOR]* _(score: ${review.score}/100)_\n\n${review.improved_response || result}\n\n---\n🎬 *Video Rendering Queued*\n\n• Job ID: ${jobId}\n• Duration: ${totalDuration}s\n• Estimated Cost: $${costEstimate.estimatedCost}\n• Model: fal-ai/flux-schnell/v1.1\n\nRendering will complete in the background. You'll be notified when ready.`;
+        } catch (renderError) {
+          return `✅ *Approved — [MEDIA CONTENT DIRECTOR]* _(score: ${review.score}/100)_\n\n${review.improved_response || result}\n\n---\n⚠️ *Rendering Failed:* ${renderError.message}\n\nStoryboard generated but video rendering encountered an error. Check fal.ai API key and Queue configuration.`;
+        }
+      }
+      
       return '✅ *Approved & Executed — [' + agentName.replace(/-/g, ' ').toUpperCase() + ']* _(score: ' + review.score + '/100)_\n\n' + (review.improved_response || result);
     }
 
