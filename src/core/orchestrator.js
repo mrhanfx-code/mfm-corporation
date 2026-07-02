@@ -10,7 +10,7 @@ import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js
 import { reviewOutput } from './quality-reviewer.js';
 import { AgentBase } from './agent-base.js';
 import { buildContextCard } from './context-card.js';
-import { emitDashboardEvent } from '../tools/dashboard-events.js';
+import { emitDashboardEvent, emitAgentStatus } from '../tools/dashboard-events.js';
 
 import { OpsCoordinator } from '../agents/coo/ops-coordinator.js';
 import { StrategicPlanner } from '../agents/coo/strategic-planner.js';
