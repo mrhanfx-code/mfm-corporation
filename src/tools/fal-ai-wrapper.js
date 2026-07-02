@@ -175,7 +175,7 @@ export async function processQueuedJob(message, env) {
     // Poll for completion (simplified - in production use webhooks)
     let status = await getJobStatus(submission.requestId, env);
     let attempts = 0;
-    const maxAttempts = 30; // 5 minutes max wait
+    const maxAttempts = 120; // 20 minutes max wait (120 × 10s)
     
     while (status.status !== 'completed' && status.status !== 'failed' && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
