@@ -59,6 +59,7 @@ queue    = "mfm-task-queue"
 queue            = "mfm-task-queue"
 max_batch_size   = 5
 max_batch_timeout = 30
+script           = "queue-consumer"
 
 # Scheduled cron triggers (MYT = UTC+8)
 # 00:00 UTC = 08:00 MYT — morning briefing
