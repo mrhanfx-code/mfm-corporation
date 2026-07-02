@@ -93,7 +93,8 @@ async function callOpenRouter(model, messages, env, options = {}) {
         logger.warn('llm-client', 'openrouter_rate_limit', { model, attempt });
         // Set cooldown in KV for 60 seconds
         await env.KV.put('openrouter_cooldown', Date.now().toString(), { expirationTtl: 60 });
-        continue;
+        // Immediately throw to allow chain to move to next provider
+        throw lastErr;
       }
       if (response.status >= 500) {
         lastErr = new Error(`OpenRouter ${response.status}`);
