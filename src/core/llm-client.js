@@ -133,8 +133,12 @@ async function callCloudflareAI(model, messages, env, options = {}) {
 
     if (!response?.response) throw new Error('Empty Cloudflare AI response');
 
+    const content = typeof response.response === 'string' 
+      ? response.response.trim() 
+      : String(response.response).trim();
+
     return {
-      content: response.response.trim(),
+      content,
       model,
       provider: 'cloudflare',
       usage: response.usage || {}
