@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data, error, status } = await workersApi.get("/agents");
+  const { data, error, status } = await workersApi.get("/api/v1/dashboard/agents");
 
   if (error) {
     return NextResponse.json({ error }, { status });
