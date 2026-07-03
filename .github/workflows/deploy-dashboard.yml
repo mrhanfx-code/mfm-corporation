@@ -1,4 +1,5 @@
 name: Deploy Dashboard to Cloudflare Workers
+# Triggering Run 9 to test with configured GitHub secrets
 
 on:
   push:
