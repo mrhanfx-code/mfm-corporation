@@ -2,6 +2,7 @@ name = "mfm-corporation-dashboard"
 main = ".open-next/worker.js"
 compatibility_date = "2024-12-30"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+pages_build_output_dir = ".open-next"
 
 [assets]
 directory = ".open-next/assets"
@@ -16,3 +17,5 @@ NEXTAUTH_URL = "https://mfm-corp.cc.cd"
 AUTH_URL = "https://mfm-corp.cc.cd"
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD_HASH_B64 = "JDJiJDEwJEloVXBySVpZZE9BbzNOMFV5bHM3OHVjVTd4Vlgub0ptYWxqekd5Yk5LOTFxV1c0aW9CQjRh"
+WORKERS_API_URL = "https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev"
+DASHBOARD_SECRET = "mfm-dashboard-secret-2026-xyz"

@@ -1,10 +1,10 @@
 import "server-only";
 
 const BASE_URL = process.env.WORKERS_API_URL;
-const SECRET = process.env.WORKERS_API_SECRET;
+const SECRET = process.env.DASHBOARD_SECRET;
 
 if (!BASE_URL) throw new Error("WORKERS_API_URL is not set");
-if (!SECRET) throw new Error("WORKERS_API_SECRET is not set");
+if (!SECRET) throw new Error("DASHBOARD_SECRET is not set");
 
 interface ApiResponse<T> {
   data: T | null;
