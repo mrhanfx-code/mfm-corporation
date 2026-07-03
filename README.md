@@ -1,7 +1,7 @@
 # MFM Corporation - CEO Remy Command Center
 
 > 🎯 **Mission**: AI-powered corporate automation with 42 specialized agents coordinated through natural language chat interface.
-> 🚀 **Version**: 2.0.0 (May 29, 2026) - 17 New Core Modules Integrated
+> 🚀 **Version**: 2.1.0 (July 4, 2026) - Real AI Image Generation + Dashboard API Authentication
 
 ## 🏢 Corporate Structure
 
@@ -125,7 +125,27 @@ CEO Remy can chat naturally with the General Manager using:
 
 **Total**: 17 new modules integrated into agent-base.js
 
-## 🇲🇾 Malaysia Optimization
+## � Recent Updates (v2.1.0 - July 4, 2026)
+
+### Real AI Image Generation
+- **New Endpoint**: `POST /api/v1/dashboard/generate-image`
+- **Model**: Cloudflare Workers AI (FLUX.2)
+- **Storage**: R2 bucket for generated images
+- **Test Script**: `scripts/test-real-image-generation.js`
+- **Status**: ✅ Tested and working - generates corporate imagery
+
+### Dashboard API Authentication
+- **DASHBOARD_SECRET**: Alternative authentication method for dashboard API
+- **Endpoints**: `/api/v1/dashboard/status`, `/api/v1/dashboard/agents`, `/api/v1/dashboard/generate-image`
+- **Security**: Secret-based auth as alternative to JWT tokens
+- **Status**: ✅ Deployed and verified
+
+### Bug Fixes
+- **405 Error**: Fixed dashboard API endpoint path mismatch
+- **Route**: Changed from `/agents` to `/api/v1/dashboard/agents`
+- **Status**: ✅ Resolved
+
+## �🇾 Malaysia Optimization
 
 - **Fast loading** from Malaysia (global CDN)
 - **Singapore region** database (low latency)
@@ -133,11 +153,11 @@ CEO Remy can chat naturally with the General Manager using:
 - **Malaysia timezone** support
 - **Local performance** optimization
 
-## 📊 System Status (Last Updated: May 29, 2026)
+## 📊 System Status (Last Updated: July 4, 2026)
 
 **Overall Rating**: B+ (Operational with Critical Security Issues)
 
-**Version**: 2.0.0 - 17 New Core Modules Integrated
+**Version**: 2.1.0 - Real AI Image Generation + Dashboard API Authentication
 
 ### Infrastructure Health: ✅ 7/7 Components Operational
 - KV Cache: Connected
