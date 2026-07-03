@@ -1,5 +1,5 @@
 name: Deploy Dashboard to Cloudflare Pages
-# Triggering Run 12 to test with Pages deployment fix
+# Triggering Run 13 to test Pages deployment with correct output directory
 
 on:
   push:
@@ -42,6 +42,10 @@ jobs:
       - name: Build with OpenNext
         working-directory: ./dashboard
         run: npx opennextjs-cloudflare build
+
+      - name: Inspect build output
+        working-directory: ./dashboard
+        run: ls -la .open-next
 
       - name: Deploy to Cloudflare Pages
         working-directory: ./dashboard
