@@ -1,0 +1,70 @@
+name = "mfm-corporation-telegram-bot"
+main = "src/telegram-bot-agent.js"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Observability — applied at root level for all deployments
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+
+# Root-level vars — applies for all deployment methods
+# Required secrets (set via: wrangler secret put <NAME>):
+#   TELEGRAM_BOT_TOKEN, SENDGRID_API_KEY, WEBHOOK_SECRET, OPENROUTER_API_KEY
+# Optional secrets (for MCP integrations):
+#   CEREBRAS_API_KEY, PERPLEXITY_API_KEY, BRAVE_API_KEY, GITHUB_TOKEN, NOTION_API_KEY
+#   DASHBOARD_SECRET (for /ask endpoint)
+[vars]
+ENVIRONMENT = "production"
+VERSION = "1.0.2"
+AUTHORIZED_USER_IDS = "6847462500"
+CEO_EMAIL = "remy@mfm-corporation.com"
+USER_EMAIL = "muhdfarihan@gmail.com"
+DASHBOARD_ORIGIN = "https://mfm-corp.cc.cd"
+
+# Root-level KV binding
+[[kv_namespaces]]
+binding = "KV"
+id = "b7fb55a0476d41b395fb36cf64b0a317"
+preview_id = "b7fb55a0476d41b395fb36cf64b0a317"
+
+# Root-level D1 binding
+[[d1_databases]]
+binding = "db"
+database_name = "mfm-corporation-db"
+database_id = "91e8699c-2731-4f0d-8a09-9f9765e7e4cc"
+
+# Root-level R2 binding
+[[r2_buckets]]
+binding = "mfm-corporation-uploads"
+bucket_name = "mfm-corporation-uploads"
+
+# Cloudflare Workers AI — image generation (free tier: 10,000 neurons/day)
+[ai]
+binding = "AI"
+
+# Cloudflare Queue — async tasks >5s (e.g. long research, batch content)
+[[queues.producers]]
+binding  = "TASK_QUEUE"
+queue    = "mfm-task-queue"
+
+[[queues.consumers]]
+queue            = "mfm-task-queue"
+max_batch_size   = 5
+max_batch_timeout = 30
+script           = "queue-consumer"
+
+# Scheduled cron triggers (MYT = UTC+8)
+# 00:00 UTC = 08:00 MYT — morning briefing
+# 05:00 UTC = 13:00 MYT — midday ops check
+# 10:00 UTC = 18:00 MYT — evening digest
+[triggers]
+crons = ["0 0 * * *", "0 5 * * *", "0 10 * * *"]
+

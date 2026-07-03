@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFM Corporation - Organization Chart Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #020617;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            border-bottom: 3px solid #0369a1;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            color: #0f172a;
+            font-size: 2.5rem;
+            margin: 0 0 8px 0;
+            font-weight: 700;
+        }
+        .header p {
+            color: #64748b;
+            font-size: 1.125rem;
+            margin: 0;
+        }
+        .controls {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #0369a1;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0284c7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #475569;
+            transform: translateY(-2px);
+        }
+        .chart-container {
+            position: relative;
+            margin: 32px 0;
+            min-height: 600px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .org-chart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .org-level {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .org-box {
+            background: white;
+            border: 2px solid #0369a1;
+            border-radius: 12px;
+            padding: 16px;
+            min-width: 180px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .org-box:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #0284c7;
+        }
+        .org-box.ceo {
+            background: linear-gradient(135deg, #0369a1, #0284c7);
+            color: white;
+            border-color: #0f172a;
+            min-width: 220px;
+        }
+        .org-box.executive {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border-color: #15803d;
+        }
+        .org-box.team {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border-color: #b45309;
+            min-width: 140px;
+        }
+        .org-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        .org-subtitle {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+        .org-status {
+            font-size: 0.625rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            display: inline-block;
+        }
+        .connector {
+            width: 2px;
+            height: 30px;
+            background: #0369a1;
+            margin: 0 auto;
+        }
+        .horizontal-connector {
+            height: 2px;
+            background: #0369a1;
+            flex: 1;
+            margin: 0 10px;
+        }
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 32px 0;
+        }
+        .stat-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0369a1;
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .test-results {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 32px 0;
+        }
+        .test-results h3 {
+            color: #0369a1;
+            margin: 0 0 16px 0;
+        }
+        .test-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        .test-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-pass {
+            background: #22c55e;
+            color: white;
+        }
+        .status-fail {
+            background: #ef4444;
+            color: white;
+        }
+        .status-pending {
+            background: #64748b;
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            .header h1 {
+                font-size: 1.75rem;
+            }
+            .org-level {
+                flex-direction: column;
+                align-items: center;
+            }
+            .controls {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔷 MFM Corporation</h1>
+            <p>Organization Chart Generator & Image Testing System</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="generateOrgChart()">
+                📊 Generate Organization Chart
+            </button>
+            <button class="btn btn-secondary" onclick="downloadChart()">
+                📥 Download as Image
+            </button>
+            <button class="btn btn-secondary" onclick="testImageGeneration()">
+                🧪 Test Image Generation
+            </button>
+            <button class="btn btn-secondary" onclick="resetChart()">
+                🔄 Reset Chart
+            </button>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-card">
+                <div class="stat-value" id="totalEmployees">25</div>
+                <div class="stat-label">Total Employees</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="executiveCount">5</div>
+                <div class="stat-label">C-Level Executives</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="teamCount">19</div>
+                <div class="stat-label">Specialized Teams</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="departments">4</div>
+                <div class="stat-label">Departments</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="org-chart" id="orgChart">
+                <!-- Organization chart will be generated here -->
+            </div>
+        </div>
+
+        <div class="test-results">
+            <h3>🧪 Image Generation Test Results</h3>
+            <div class="test-item">
+                <span>Chart Generation</span>
+                <span class="test-status status-pending" id="test-1">Pending</span>
+            </div>
+            <div class="test-item">
+                <span>Canvas Rendering</span>
+                <span class="test-status status-pending" id="test-2">Pending</span>
+            </div>
+            <div class="test-item">
+                <span>Image Export</span>
+                <span class="test-status status-pending" id="test-3">Pending</span>
+            </div>
+            <div class="test-item">
+                <span>File Download</span>
+                <span class="test-status status-pending" id="test-4">Pending</span>
+            </div>
+            <div class="test-item">
+                <span>Image Quality</span>
+                <span class="test-status status-pending" id="test-5">Pending</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+        // MFM Corporation Organization Structure
+        const orgStructure = {
+            ceo: {
+                title: "CEO Remy",
+                subtitle: "Chief Executive Officer",
+                status: "🟢 Active"
+            },
+            executives: [
+                { title: "COO", subtitle: "Chief Operating Officer", status: "🟢 Active" },
+                { title: "CTO", subtitle: "Chief Technology Officer", status: "🟢 Active" },
+                { title: "CFO", subtitle: "Chief Financial Officer", status: "🟢 Active" },
+                { title: "CMO", subtitle: "Chief Marketing Officer", status: "🟢 Active" },
+                { title: "CINO", subtitle: "Chief Innovation Officer", status: "🟢 Active" }
+            ],
+            teams: [
+                { title: "Innovation", subtitle: "R&D Team", status: "🟢 Working" },
+                { title: "Development", subtitle: "Software Team", status: "🟢 Working" },
+                { title: "Design", subtitle: "UI/UX Team", status: "🟢 Working" },
+                { title: "Marketing", subtitle: "Digital Team", status: "🟢 Working" },
+                { title: "Sales", subtitle: "Revenue Team", status: "🟢 Working" },
+                { title: "Finance", subtitle: "Accounting Team", status: "🟢 Working" },
+                { title: "HR", subtitle: "People Team", status: "🟢 Working" },
+                { title: "Legal", subtitle: "Compliance Team", status: "🟢 Working" },
+                { title: "Operations", subtitle: "Process Team", status: "🟢 Working" },
+                { title: "Quality", subtitle: "QA Team", status: "🟢 Working" },
+                { title: "Security", subtitle: "Cyber Team", status: "🟢 Working" },
+                { title: "Data", subtitle: "Analytics Team", status: "🟢 Working" },
+                { title: "AI", subtitle: "Machine Learning", status: "🟢 Working" },
+                { title: "Cloud", subtitle: "Infrastructure", status: "🟢 Working" },
+                { title: "Mobile", subtitle: "App Development", status: "🟢 Working" },
+                { title: "Web", subtitle: "Frontend Team", status: "🟢 Working" },
+                { title: "Backend", subtitle: "API Team", status: "🟢 Working" },
+                { title: "DevOps", subtitle: "Deployment Team", status: "🟢 Working" },
+                { title: "Support", subtitle: "Customer Service", status: "🟢 Working" }
+            ]
+        };
+
+        function updateTestStatus(testId, status) {
+            const element = document.getElementById(testId);
+            if (element) {
+                element.className = `test-status status-${status}`;
+                element.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            }
+        }
+
+        function generateOrgChart() {
+            const chartContainer = document.getElementById('orgChart');
+            chartContainer.innerHTML = '';
+
+            // CEO Level
+            const ceoLevel = document.createElement('div');
+            ceoLevel.className = 'org-level';
+            
+            const ceoBox = document.createElement('div');
+            ceoBox.className = 'org-box ceo';
+            ceoBox.innerHTML = `
+                <div class="org-title">${orgStructure.ceo.title}</div>
+                <div class="org-subtitle">${orgStructure.ceo.subtitle}</div>
+                <div class="org-status">${orgStructure.ceo.status}</div>
+            `;
+            ceoLevel.appendChild(ceoBox);
+            chartContainer.appendChild(ceoLevel);
+
+            // Connector
+            const connector1 = document.createElement('div');
+            connector1.className = 'connector';
+            chartContainer.appendChild(connector1);
+
+            // Executive Level
+            const executiveLevel = document.createElement('div');
+            executiveLevel.className = 'org-level';
+            
+            orgStructure.executives.forEach(exec => {
+                const execBox = document.createElement('div');
+                execBox.className = 'org-box executive';
+                execBox.innerHTML = `
+                    <div class="org-title">${exec.title}</div>
+                    <div class="org-subtitle">${exec.subtitle}</div>
+                    <div class="org-status">${exec.status}</div>
+                `;
+                executiveLevel.appendChild(execBox);
+            });
+            
+            chartContainer.appendChild(executiveLevel);
+
+            // Connector
+            const connector2 = document.createElement('div');
+            connector2.className = 'connector';
+            chartContainer.appendChild(connector2);
+
+            // Teams Level
+            const teamsLevel = document.createElement('div');
+            teamsLevel.className = 'org-level';
+            
+            orgStructure.teams.forEach(team => {
+                const teamBox = document.createElement('div');
+                teamBox.className = 'org-box team';
+                teamBox.innerHTML = `
+                    <div class="org-title">${team.title}</div>
+                    <div class="org-subtitle">${team.subtitle}</div>
+                    <div class="org-status">${team.status}</div>
+                `;
+                teamsLevel.appendChild(teamBox);
+            });
+            
+            chartContainer.appendChild(teamsLevel);
+
+            updateTestStatus('test-1', 'pass');
+        }
+
+        async function downloadChart() {
+            updateTestStatus('test-2', 'running');
+            
+            try {
+                const chartElement = document.getElementById('orgChart');
+                const canvas = await html2canvas(chartElement, {
+                    backgroundColor: '#ffffff',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true
+                });
+                
+                updateTestStatus('test-2', 'pass');
+                updateTestStatus('test-3', 'running');
+                
+                // Convert to blob and download
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'mfm-corporation-org-chart.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    updateTestStatus('test-3', 'pass');
+                    updateTestStatus('test-4', 'pass');
+                    updateTestStatus('test-5', 'pass');
+                }, 'image/png');
+                
+            } catch (error) {
+                console.error('Error generating chart:', error);
+                updateTestStatus('test-2', 'fail');
+                updateTestStatus('test-3', 'fail');
+                updateTestStatus('test-4', 'fail');
+                updateTestStatus('test-5', 'fail');
+            }
+        }
+
+        async function testImageGeneration() {
+            // Reset all tests
+            for (let i = 1; i <= 5; i++) {
+                updateTestStatus(`test-${i}`, 'pending');
+            }
+            
+            // Generate chart first
+            generateOrgChart();
+            
+            // Wait a moment for rendering
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Test download functionality
+            await downloadChart();
+        }
+
+        function resetChart() {
+            document.getElementById('orgChart').innerHTML = `
+                <div style="text-align: center; padding: 60px; color: #64748b;">
+                    <h3>📊 Organization Chart</h3>
+                    <p>Click "Generate Organization Chart" to create the visual structure</p>
+                </div>
+            `;
+            
+            // Reset test results
+            for (let i = 1; i <= 5; i++) {
+                updateTestStatus(`test-${i}`, 'pending');
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            resetChart();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFM Design App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="toolbar" role="toolbar" aria-label="Drawing Tools">
+        <button class="tool-button active" data-tool="select" title="Select Tool (V)">&#x2196;</button>
+        <button class="tool-button" data-tool="rectangle" title="Rectangle Tool (M)">&#x25AD;</button>
+        <button class="tool-button" data-tool="ellipse" title="Ellipse Tool (L)">&#x25CB;</button>
+        <button class="tool-button" data-tool="line" title="Line Tool">&#x2571;</button>
+        <button class="tool-button" data-tool="text" title="Text Tool (T)">T</button>
+        <button class="tool-button" data-tool="fill" title="Fill Tool">&#x1FAA3;</button>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="panel">
+                <div class="panel-header">Layers</div>
+                <div class="panel-content">
+                    <div id="layers">
+                        <div class="layer-item active">
+                            <span class="layer-visibility">&#x1F441;</span>
+                            <span class="layer-name">Layer 1</span>
+                        </div>
+                    </div>
+                    <button class="button ai-section" id="addLayerBtn">Add Layer</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Properties</div>
+                <div class="panel-content">
+                    <div class="properties-group">
+                        <label for="fillColor">Fill Color</label>
+                        <input type="color" class="color-input" id="fillColor" value="#000000" title="Fill Color">
+                    </div>
+                    <div class="properties-group">
+                        <label for="strokeColor">Stroke Color</label>
+                        <input type="color" class="color-input" id="strokeColor" value="#000000" title="Stroke Color">
+                    </div>
+                    <div class="properties-group">
+                        <label for="strokeWidth">Stroke Width</label>
+                        <input type="number" class="number-input" id="strokeWidth" value="1" min="0" max="100" title="Stroke Width" placeholder="1">
+                    </div>
+                    <div class="properties-group">
+                        <label for="opacity">Opacity</label>
+                        <input type="number" class="number-input" id="opacity" value="100" min="0" max="100" title="Opacity %" placeholder="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="canvas" role="img" aria-label="Design Canvas"></canvas>
+
+            <div class="zoom-controls">
+                <button class="zoom-button" id="zoomOut" title="Zoom Out">&#x2212;</button>
+                <div class="zoom-display" id="zoomDisplay">100%</div>
+                <button class="zoom-button" id="zoomIn" title="Zoom In">+</button>
+                <button class="zoom-button" id="zoomReset" title="Reset Zoom">&#x27F2;</button>
+            </div>
+
+            <div class="ai-panel">
+                <div class="ai-panel-header">AI Design Generator</div>
+                <div class="ai-panel-content">
+                    <div class="input-group">
+                        <label for="aiPrompt">Design Description</label>
+                        <textarea id="aiPrompt" placeholder="Describe the design you want to generate..."></textarea>
+                    </div>
+                    <button class="button" id="generateBtn">Generate Design</button>
+
+                    <div class="ai-section">
+                        <div class="input-group">
+                            <label for="searchInput">Search Online Designs</label>
+                            <input type="text" id="searchInput" placeholder="Search for designs...">
+                        </div>
+                        <button class="button" id="searchBtn">Browse Designs</button>
+                    </div>
+
+                    <div class="ai-section">
+                        <div class="input-group">
+                            <label for="styleSelect">Apply Style</label>
+                            <select id="styleSelect" title="Select a design style">
+                                <option value="">Select Style</option>
+                                <option value="modern">Modern</option>
+                                <option value="classic">Classic</option>
+                                <option value="minimalist">Minimalist</option>
+                                <option value="bold">Bold</option>
+                                <option value="elegant">Elegant</option>
+                            </select>
+                        </div>
+                        <button class="button" id="applyStyleBtn">Apply Style</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

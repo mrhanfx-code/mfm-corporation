@@ -1,0 +1,26 @@
+# Cloudflare Wrangler local dev state
+.wrangler/
+
+# Sensitive / secrets
+OPENROUTER.txt
+risk-wh.txt
+*.env
+.env
+.env.local
+.env.*
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+dark-art-3b9a.txt
+cloudflare_apeeaii.txt
+*.txt
+
+# Automation data volumes
+automation/n8n_data/
+automation/waha_data/
+automation/redis_data/

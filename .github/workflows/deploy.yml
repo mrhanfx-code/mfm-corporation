@@ -1,0 +1,34 @@
+name: Deploy MFM Corporation
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy-worker:
+    name: Deploy Cloudflare Worker (API)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Worker via Wrangler
+        uses: cloudflare/wrangler-action@v3
+        env:
+          NODE_TLS_REJECT_UNAUTHORIZED: "0"
+          NO_PROXY: "*"
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy --env=""
+
+  deploy-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: deploy-worker
+    steps:
+      - name: Summary
+        run: |
+          echo "## MFM Corporation Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Worker API:** https://mfm-corporation-api.mrhan-fx.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pages:** https://mfm-corporation-git.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** master" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY

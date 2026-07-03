@@ -1,0 +1,35 @@
+{
+  "name": "mfm-design-app",
+  "version": "1.0.0",
+  "description": "MFM Corporation Design Application - Simplified Adobe Illustrator with AI",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "test": "jest"
+  },
+  "keywords": ["design", "illustrator", "ai", "vector", "graphics"],
+  "author": "MFM Corporation",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {},
+  "build": {
+    "appId": "com.mfm.design-app",
+    "productName": "MFM Design App",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

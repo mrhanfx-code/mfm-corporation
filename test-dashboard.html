@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFM Corporation - Test Suite</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8fafc;
+            color: #020617;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .test-header {
+            border-bottom: 2px solid #0369a1;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .test-header h1 {
+            color: #0f172a;
+            font-size: 2rem;
+            margin: 0;
+        }
+        .test-section {
+            margin-bottom: 32px;
+        }
+        .test-section h2 {
+            color: #0369a1;
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            border-left: 4px solid #0369a1;
+            padding-left: 12px;
+        }
+        .test-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .test-item:hover {
+            background: #f1f5f9;
+            border-color: #0369a1;
+        }
+        .test-name {
+            font-weight: 500;
+            color: #0f172a;
+        }
+        .test-status {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-pass {
+            background: #22c55e;
+            color: white;
+        }
+        .status-fail {
+            background: #ef4444;
+            color: white;
+        }
+        .status-pending {
+            background: #64748b;
+            color: white;
+        }
+        .status-running {
+            background: #f59e0b;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .test-results {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #0369a1;
+        }
+        .test-iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 24px;
+        }
+        .control-panel {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .control-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-primary {
+            background: #0369a1;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0284c7;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #475569;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0369a1, #22c55e);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>🔷 MFM Corporation - Test Suite</h1>
+            <p>Comprehensive testing of dashboard functionality and user interactions</p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+
+        <div class="control-panel">
+            <button class="control-btn btn-primary" onclick="runAllTests()">🚀 Run All Tests</button>
+            <button class="control-btn btn-secondary" onclick="runHeaderTests()">📋 Header Tests</button>
+            <button class="control-btn btn-secondary" onclick="runChatTests()">💬 Chat Tests</button>
+            <button class="control-btn btn-secondary" onclick="runSidebarTests()">📊 Sidebar Tests</button>
+            <button class="control-btn btn-secondary" onclick="runModalTests()">🔧 Modal Tests</button>
+            <button class="control-btn btn-secondary" onclick="runResponsiveTests()">📱 Responsive Tests</button>
+            <button class="control-btn btn-secondary" onclick="resetTests()">🔄 Reset</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 Header Component Tests</h2>
+            <div class="test-item">
+                <span class="test-name">Security Button Display</span>
+                <span class="test-status status-pending" id="header-1">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Settings Button Display</span>
+                <span class="test-status status-pending" id="header-2">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">CEO Profile Display</span>
+                <span class="test-status status-pending" id="header-3">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Status Indicator Animation</span>
+                <span class="test-status status-pending" id="header-4">Pending</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>💬 Chat Interface Tests</h2>
+            <div class="test-item">
+                <span class="test-name">Message Input Field</span>
+                <span class="test-status status-pending" id="chat-1">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Send Button Functionality</span>
+                <span class="test-status status-pending" id="chat-2">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Voice Button Display</span>
+                <span class="test-status status-pending" id="chat-3">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">File Upload Zone</span>
+                <span class="test-status status-pending" id="chat-4">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Chat Message Display</span>
+                <span class="test-status status-pending" id="chat-5">Pending</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Sidebar Component Tests</h2>
+            <div class="test-item">
+                <span class="test-name">Corporate Status Display</span>
+                <span class="test-status status-pending" id="sidebar-1">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Executive Status Cards</span>
+                <span class="test-status status-pending" id="sidebar-2">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Team Performance Grid</span>
+                <span class="test-status status-pending" id="sidebar-3">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Status Value Updates</span>
+                <span class="test-status status-pending" id="sidebar-4">Pending</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 Modal Functionality Tests</h2>
+            <div class="test-item">
+                <span class="test-name">Authentication Modal</span>
+                <span class="test-status status-pending" id="modal-1">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Settings Modal</span>
+                <span class="test-status status-pending" id="modal-2">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Modal Close Functionality</span>
+                <span class="test-status status-pending" id="modal-3">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Modal Backdrop Click</span>
+                <span class="test-status status-pending" id="modal-4">Pending</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📱 Responsive Design Tests</h2>
+            <div class="test-item">
+                <span class="test-name">Mobile Layout (480px)</span>
+                <span class="test-status status-pending" id="responsive-1">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Tablet Layout (768px)</span>
+                <span class="test-status status-pending" id="responsive-2">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Desktop Layout (1024px)</span>
+                <span class="test-status status-pending" id="responsive-3">Pending</span>
+            </div>
+            <div class="test-item">
+                <span class="test-name">Wide Layout (1440px)</span>
+                <span class="test-status status-pending" id="responsive-4">Pending</span>
+            </div>
+        </div>
+
+        <div class="test-results" id="testResults">
+            <h3>Test Results Summary</h3>
+            <p id="resultsText">Click "Run All Tests" to begin comprehensive testing.</p>
+        </div>
+
+        <iframe class="test-iframe" id="testFrame" src="index.html"></iframe>
+    </div>
+
+    <script>
+        let testResults = {
+            passed: 0,
+            failed: 0,
+            total: 0,
+            running: false
+        };
+
+        function updateStatus(testId, status) {
+            const element = document.getElementById(testId);
+            if (element) {
+                element.className = `test-status status-${status}`;
+                element.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            }
+        }
+
+        function updateProgress() {
+            const progressFill = document.getElementById('progressFill');
+            const percentage = (testResults.passed / testResults.total) * 100;
+            progressFill.style.width = `${percentage}%`;
+        }
+
+        function updateResults() {
+            const resultsText = document.getElementById('resultsText');
+            const status = testResults.running ? 'Running' : 'Complete';
+            resultsText.innerHTML = `
+                <strong>Status:</strong> ${status}<br>
+                <strong>Passed:</strong> ${testResults.passed}/${testResults.total}<br>
+                <strong>Failed:</strong> ${testResults.failed}/${testResults.total}<br>
+                <strong>Success Rate:</strong> ${testResults.total > 0 ? ((testResults.passed / testResults.total) * 100).toFixed(1) : 0}%
+            `;
+        }
+
+        async function runTest(testId, testName, testFunction) {
+            updateStatus(testId, 'running');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            try {
+                const result = await testFunction();
+                if (result) {
+                    updateStatus(testId, 'pass');
+                    testResults.passed++;
+                } else {
+                    updateStatus(testId, 'fail');
+                    testResults.failed++;
+                }
+            } catch (error) {
+                updateStatus(testId, 'fail');
+                testResults.failed++;
+            }
+            
+            updateProgress();
+            updateResults();
+        }
+
+        async function runHeaderTests() {
+            const frame = document.getElementById('testFrame');
+            const frameDoc = frame.contentDocument || frame.contentWindow.document;
+            
+            await runTest('header-1', 'Security Button', async () => {
+                const securityBtn = frameDoc.querySelector('#auth-status');
+                return securityBtn && securityBtn.textContent.includes('Secured');
+            });
+            
+            await runTest('header-2', 'Settings Button', async () => {
+                const settingsBtn = frameDoc.querySelector('#settings-btn');
+                return settingsBtn && settingsBtn.textContent.includes('Settings');
+            });
+            
+            await runTest('header-3', 'CEO Profile', async () => {
+                const ceoName = frameDoc.querySelector('.ceo-name');
+                return ceoName && ceoName.textContent.includes('CEO Remy');
+            });
+            
+            await runTest('header-4', 'Status Indicator', async () => {
+                const statusIndicator = frameDoc.querySelector('.status-indicator');
+                return statusIndicator && statusIndicator.textContent.includes('Online');
+            });
+        }
+
+        async function runChatTests() {
+            const frame = document.getElementById('testFrame');
+            const frameDoc = frame.contentDocument || frame.contentWindow.document;
+            
+            await runTest('chat-1', 'Message Input', async () => {
+                const messageInput = frameDoc.querySelector('#ceoMessage');
+                return messageInput && messageInput.tagName === 'TEXTAREA';
+            });
+            
+            await runTest('chat-2', 'Send Button', async () => {
+                const sendBtn = frameDoc.querySelector('#sendBtn');
+                return sendBtn && sendBtn.textContent.includes('Send');
+            });
+            
+            await runTest('chat-3', 'Voice Button', async () => {
+                const voiceBtn = frameDoc.querySelector('#voiceBtn');
+                return voiceBtn && voiceBtn.textContent.includes('Voice');
+            });
+            
+            await runTest('chat-4', 'File Upload', async () => {
+                const fileInput = frameDoc.querySelector('#fileInput');
+                return fileInput && fileInput.type === 'file';
+            });
+            
+            await runTest('chat-5', 'Chat Messages', async () => {
+                const chatMessages = frameDoc.querySelector('.chat-messages');
+                return chatMessages && chatMessages.children.length > 0;
+            });
+        }
+
+        async function runSidebarTests() {
+            const frame = document.getElementById('testFrame');
+            const frameDoc = frame.contentDocument || frame.contentWindow.document;
+            
+            await runTest('sidebar-1', 'Corporate Status', async () => {
+                const statusItems = frameDoc.querySelectorAll('.status-item');
+                return statusItems.length >= 4;
+            });
+            
+            await runTest('sidebar-2', 'Executive Status', async () => {
+                const executiveItems = frameDoc.querySelectorAll('.executive-item');
+                return executiveItems.length >= 5;
+            });
+            
+            await runTest('sidebar-3', 'Team Performance', async () => {
+                const teamCards = frameDoc.querySelectorAll('.team-card');
+                return teamCards.length >= 19;
+            });
+            
+            await runTest('sidebar-4', 'Status Updates', async () => {
+                const teamsActive = frameDoc.querySelector('#teamsActive');
+                return teamsActive && teamsActive.textContent.includes('19/19');
+            });
+        }
+
+        async function runModalTests() {
+            const frame = document.getElementById('testFrame');
+            const frameDoc = frame.contentDocument || frame.contentWindow.document;
+            
+            await runTest('modal-1', 'Authentication Modal', async () => {
+                const authModal = frameDoc.querySelector('#authModal');
+                return authModal && authModal.style.display !== 'none';
+            });
+            
+            await runTest('modal-2', 'Settings Modal', async () => {
+                const settingsModal = frameDoc.querySelector('#settingsModal');
+                return settingsModal && settingsModal.style.display !== 'none';
+            });
+            
+            await runTest('modal-3', 'Modal Close', async () => {
+                const closeBtns = frameDoc.querySelectorAll('.close-btn');
+                return closeBtns.length > 0;
+            });
+            
+            await runTest('modal-4', 'Modal Backdrop', async () => {
+                const modals = frameDoc.querySelectorAll('.modal');
+                return modals.length > 0;
+            });
+        }
+
+        async function runResponsiveTests() {
+            const frame = document.getElementById('testFrame');
+            
+            await runTest('responsive-1', 'Mobile Layout', async () => {
+                frame.style.width = '480px';
+                await new Promise(resolve => setTimeout(resolve, 100));
+                return true;
+            });
+            
+            await runTest('responsive-2', 'Tablet Layout', async () => {
+                frame.style.width = '768px';
+                await new Promise(resolve => setTimeout(resolve, 100));
+                return true;
+            });
+            
+            await runTest('responsive-3', 'Desktop Layout', async () => {
+                frame.style.width = '1024px';
+                await new Promise(resolve => setTimeout(resolve, 100));
+                return true;
+            });
+            
+            await runTest('responsive-4', 'Wide Layout', async () => {
+                frame.style.width = '1440px';
+                await new Promise(resolve => setTimeout(resolve, 100));
+                return true;
+            });
+        }
+
+        async function runAllTests() {
+            testResults = { passed: 0, failed: 0, total: 20, running: true };
+            updateResults();
+            
+            await runHeaderTests();
+            await runChatTests();
+            await runSidebarTests();
+            await runModalTests();
+            await runResponsiveTests();
+            
+            testResults.running = false;
+            updateResults();
+        }
+
+        function resetTests() {
+            testResults = { passed: 0, failed: 0, total: 0, running: false };
+            
+            const allTests = document.querySelectorAll('.test-status');
+            allTests.forEach(test => {
+                test.className = 'test-status status-pending';
+                test.textContent = 'Pending';
+            });
+            
+            document.getElementById('progressFill').style.width = '0%';
+            updateResults();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            resetTests();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{
+  "name": "mfm-corporation",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "MFM Corporation - CEO Remy Command Center with 19 specialized teams",
+  "main": "index.html",
+  "scripts": {
+    "build": "echo 'Build completed - Static files ready for deployment'",
+    "dev": "echo 'Development mode - Open index.html in browser'",
+    "deploy": "echo 'Deploy to GitHub Pages via GitHub Actions'",
+    "deploy:cloudflare": "wrangler pages deploy",
+    "dev:cloudflare": "wrangler pages dev",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "lint": "echo 'Linting would run here'",
+    "serve": "python -m http.server 8000"
+  },
+  "keywords": [
+    "corporate",
+    "automation",
+    "ai",
+    "teams",
+    "management",
+    "ceo",
+    "chat",
+    "real-time"
+  ],
+  "author": "CEO Remy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrhanfx-code/mfm-corporation.git"
+  },
+  "homepage": "https://mrhanfx-code.github.io/mfm-corporation",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.5.0",
+    "@vitest/coverage-v8": "^2.1.0",
+    "miniflare": "^3.20240801.0",
+    "playwright": "^1.48.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^4.94.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3"
+  }
+}

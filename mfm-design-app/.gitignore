@@ -1,0 +1,8 @@
+node_modules/
+dist/
+electron/
+*.zip
+*.log
+.env
+.DS_Store
+Thumbs.db

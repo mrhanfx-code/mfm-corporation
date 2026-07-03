@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MFM Corporation — CEO Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --bg: #0a0f1e; --surface: #111827; --border: #1f2937;
+        --text: #f3f4f6; --muted: #6b7280; --accent: #6366f1;
+        --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+      }
+      body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+      /* Header */
+      header { display: flex; align-items: center; justify-content: space-between;
+        padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+        background: var(--surface); position: sticky; top: 0; z-index: 10; }
+      .logo { font-size: 1.2rem; font-weight: 700; letter-spacing: -.02em; }
+      .logo span { color: var(--accent); }
+      .header-right { display: flex; align-items: center; gap: 1rem; font-size: .85rem; color: var(--muted); }
+      .realtime-pill { display: flex; align-items: center; gap: .4rem;
+        background: #0d1526; border: 1px solid var(--border); border-radius: 999px; padding: .3rem .75rem; }
+      #realtimeDot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); transition: background .3s; }
+      #liveIndicator { transition: opacity .3s; }
+      #liveIndicator.pulse { opacity: 0; }
+
+      /* Layout */
+      .dashboard { display: grid; grid-template-columns: 1fr 320px; grid-template-rows: auto 1fr;
+        gap: 1rem; padding: 1rem 1.5rem; max-width: 1400px; margin: 0 auto; }
+
+      /* Stat cards */
+      .stat-cards { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+      .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem;
+        padding: 1.25rem 1.5rem; }
+      .stat-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; }
+      .stat-value { font-size: 2rem; font-weight: 700; }
+      .stat-sub { font-size: .8rem; color: var(--muted); margin-top: .25rem; }
+
+      /* Panels */
+      .panel { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; overflow: hidden; }
+      .panel-header { padding: .875rem 1.25rem; border-bottom: 1px solid var(--border);
+        font-size: .85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+      .panel-body { padding: .75rem; max-height: 520px; overflow-y: auto; }
+      .panel-body::-webkit-scrollbar { width: 4px; }
+      .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+      /* Event cards */
+      .event-card { background: var(--bg); border: 1px solid var(--border); border-radius: .5rem;
+        padding: .75rem 1rem; margin-bottom: .5rem; }
+      .event-header { display: flex; align-items: center; gap: .5rem; margin-bottom: .35rem; flex-wrap: wrap; }
+      .agent-name { font-weight: 600; font-size: .85rem; }
+      .event-time { margin-left: auto; font-size: .75rem; color: var(--muted); }
+      .event-task { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .35rem; }
+      .event-footer { display: flex; gap: .75rem; font-size: .75rem; }
+      .score-badge { font-weight: 600; }
+      .latency { color: var(--muted); }
+
+      /* Badges */
+      .badge { font-size: .65rem; padding: .15rem .5rem; border-radius: 999px; font-weight: 600; }
+      .badge.cerebras   { background: #312e81; color: #a5b4fc; }
+      .badge.openrouter { background: #1c1917; color: #a8a29e; }
+      .badge.unknown    { background: var(--border); color: var(--muted); }
+
+      /* Metrics table */
+      table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+      th { text-align: left; color: var(--muted); padding: .5rem .75rem; border-bottom: 1px solid var(--border); font-weight: 500; font-size: .75rem; }
+      td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); }
+      tr:last-child td { border-bottom: none; }
+      tr:hover td { background: #0d1526; }
+
+      /* Decision cards */
+      .decision-card { display: flex; align-items: center; gap: .75rem;
+        padding: .6rem .75rem; border-bottom: 1px solid var(--border); font-size: .82rem; }
+      .decision-card:last-child { border-bottom: none; }
+      .decision-agent { font-weight: 600; flex: 1; }
+      .decision-type { color: var(--muted); font-size: .75rem; flex: 1; }
+      .decision-time { color: var(--muted); font-size: .72rem; white-space: nowrap; }
+
+      .empty-state { text-align: center; padding: 2rem; color: var(--muted); font-size: .85rem; }
+      .sidebar-col { display: flex; flex-direction: column; gap: 1rem; }
+      .panel-body-flush { padding: 0; }
+      .panel-full-width { grid-column: 1 / -1; }
+
+      /* Stat card icons */
+      .stat-icon { width: 32px; height: 32px; border-radius: .5rem; display: flex; align-items: center;
+        justify-content: center; margin-bottom: .75rem; opacity: .9; }
+      .stat-icon svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;
+        stroke-linecap: round; stroke-linejoin: round; }
+      .stat-icon.runs  { background: #1e1b4b; color: #818cf8; }
+      .stat-icon.agents { background: #052e16; color: #4ade80; }
+      .stat-icon.score { background: #1c1917; color: #fbbf24; }
+
+      /* Score bars in metrics */
+      .score-cell { display: flex; align-items: center; gap: .5rem; }
+      .score-bar-bg { width: 56px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+      .score-bar-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
+      tr.row-high td:first-child { border-left: 3px solid var(--green); }
+      tr.row-mid  td:first-child { border-left: 3px solid var(--amber); }
+      tr.row-low  td:first-child { border-left: 3px solid var(--red); }
+
+      /* Header extras */
+      .updated-ts { font-size: .72rem; color: var(--muted); }
+      .mic-header-btn { background: none; border: 1px solid var(--border); border-radius: 999px;
+        color: var(--muted); cursor: pointer; padding: .3rem .75rem; display: flex; align-items: center;
+        gap: .4rem; font-size: .82rem; transition: all .2s; }
+      .mic-header-btn:hover { border-color: var(--accent); color: var(--text); }
+      .mic-header-btn.recording { border-color: var(--red); color: var(--red); animation: pulse-mic 1s infinite; }
+      @keyframes pulse-mic { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+      .mic-header-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none;
+        stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+      /* Command panel */
+      .cmd-panel { position: fixed; bottom: 0; right: 1.5rem; width: 440px; max-width: calc(100vw - 2rem);
+        background: var(--surface); border: 1px solid var(--border); border-bottom: none;
+        border-radius: .75rem .75rem 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,.4);
+        transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1); z-index: 100; }
+      .cmd-panel.open { transform: translateY(0); }
+      .cmd-panel-header { display: flex; align-items: center; justify-content: space-between;
+        padding: .75rem 1rem; border-bottom: 1px solid var(--border); }
+      .cmd-panel-title { font-size: .82rem; font-weight: 600; color: var(--muted);
+        text-transform: uppercase; letter-spacing: .06em; }
+      .cmd-close-btn { background: none; border: none; color: var(--muted); cursor: pointer;
+        font-size: 1.1rem; line-height: 1; padding: .1rem .3rem; border-radius: .25rem; }
+      .cmd-close-btn:hover { color: var(--text); background: var(--border); }
+      .cmd-body { padding: .75rem 1rem 1rem; }
+      .cmd-status { font-size: .75rem; color: var(--accent); margin-bottom: .5rem; min-height: 1em; }
+      .cmd-input-row { display: flex; gap: .5rem; align-items: center; }
+      .cmd-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: .5rem;
+        color: var(--text); padding: .5rem .75rem; font-size: .85rem; font-family: inherit; outline: none; }
+      .cmd-input:focus { border-color: var(--accent); }
+      .cmd-icon-btn { background: var(--bg); border: 1px solid var(--border); border-radius: .5rem;
+        color: var(--muted); cursor: pointer; width: 34px; height: 34px; display: flex;
+        align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+      .cmd-icon-btn:hover { border-color: var(--accent); color: var(--text); }
+      .cmd-icon-btn.recording { border-color: var(--red); color: var(--red); animation: pulse-mic 1s infinite; }
+      .cmd-icon-btn.sending { border-color: var(--accent); color: var(--accent); }
+      .cmd-icon-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none;
+        stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .cmd-response { margin-top: .75rem; background: var(--bg); border: 1px solid var(--border);
+        border-radius: .5rem; padding: .75rem; font-size: .82rem; line-height: 1.6;
+        max-height: 260px; overflow-y: auto; white-space: pre-wrap; }
+      .cmd-response::-webkit-scrollbar { width: 4px; }
+      .cmd-response::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+      @media (max-width: 768px) {
+        .dashboard { grid-template-columns: 1fr; }
+        .stat-cards { grid-template-columns: 1fr 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="dashboardBody" style="display:none">
+    <header>
+      <div class="logo">MFM <span>Corporation</span></div>
+      <div class="header-right">
+        <span id="lastUpdated" class="updated-ts">Updated just now</span>
+        <button id="micHeaderBtn" class="mic-header-btn" title="Voice command (or click to open command panel)">
+          <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          Command
+        </button>
+        <div class="realtime-pill">
+          <div id="realtimeDot"></div>
+          <span id="liveIndicator"><span id="realtimeStatus">Connecting…</span></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="dashboard">
+      <!-- Stat cards -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <div class="stat-icon runs">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="stat-label">Total Agent Runs</div>
+          <div class="stat-value" id="statRuns">—</div>
+          <div class="stat-sub">across all 18 agents</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon agents">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="stat-label">Active Agents</div>
+          <div class="stat-value" id="statAgents">—</div>
+          <div class="stat-sub">with recorded activity</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon score">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="stat-label">Avg Quality Score</div>
+          <div class="stat-value" id="statScore">—</div>
+          <div class="stat-sub">across all agents</div>
+        </div>
+      </div>
+
+      <!-- Activity feed -->
+      <div class="panel">
+        <div class="panel-header">Live Agent Activity</div>
+        <div class="panel-body" id="activityFeed">
+          <div class="empty-state">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div class="sidebar-col">
+        <div class="panel">
+          <div class="panel-header">Routing Decisions</div>
+          <div class="panel-body panel-body-flush" id="decisionsFeed">
+            <div class="empty-state">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics table — full width -->
+      <div class="panel panel-full-width">
+        <div class="panel-header">Agent Metrics</div>
+        <div class="panel-body panel-body-flush" id="metricsTable">
+          <div class="empty-state">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command panel -->
+    <div id="cmdPanel" class="cmd-panel">
+      <div class="cmd-panel-header">
+        <span class="cmd-panel-title">CEO Command</span>
+        <button id="cmdCloseBtn" class="cmd-close-btn" title="Close">✕</button>
+      </div>
+      <div class="cmd-body">
+        <div id="cmdStatus" class="cmd-status"></div>
+        <div class="cmd-input-row">
+          <input id="cmdInput" class="cmd-input" type="text" placeholder="Speak or type a command…" autocomplete="off" />
+          <button id="cmdMicBtn" class="cmd-icon-btn" title="Start voice input">
+            <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button id="cmdSendBtn" class="cmd-icon-btn" title="Send command">
+            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div id="cmdResponse" class="cmd-response" style="display:none"></div>
+      </div>
+    </div>
+
+    </div><!-- /dashboardBody -->
+
+    <!-- Login Gate -->
+    <div id="loginGate" style="display:none;position:fixed;inset:0;z-index:9999;background:#0a0f1e;display:flex;align-items:center;justify-content:center;">
+      <div style="background:#111827;border:1px solid #1f2937;border-radius:1rem;padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center;">
+        <div style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.25rem;color:#f3f4f6;">MFM <span style="color:#6366f1;">Corp</span></div>
+        <div style="font-size:.8rem;color:#6b7280;margin-bottom:2rem;">CEO Command Center</div>
+        <input id="loginInput" type="password" placeholder="Dashboard secret…"
+          style="width:100%;background:#0a0f1e;border:1px solid #1f2937;border-radius:.5rem;padding:.75rem 1rem;color:#f3f4f6;font-size:.95rem;outline:none;margin-bottom:.75rem;"
+          onkeydown="if(event.key==='Enter')doLogin()" />
+        <button onclick="doLogin()"
+          style="width:100%;background:#6366f1;color:#fff;border:none;border-radius:.5rem;padding:.75rem;font-size:.95rem;font-weight:600;cursor:pointer;">
+          Sign In
+        </button>
+        <div id="loginError" style="color:#ef4444;font-size:.8rem;margin-top:.75rem;display:none;">Incorrect secret. Try again.</div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        const WORKER = 'https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev';
+        const gate   = document.getElementById('loginGate');
+        const body   = document.getElementById('dashboardBody');
+
+        function showLogin() {
+          gate.style.display = 'flex';
+          if (body) body.style.display = 'none';
+        }
+        function showDashboard() {
+          gate.style.display = 'none';
+          if (body) body.style.display = '';
+        }
+
+        async function verify(secret) {
+          const r = await fetch(WORKER + '/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + secret },
+            body: JSON.stringify({ text: 'ping' })
+          });
+          return r.status !== 401 && r.status !== 403;
+        }
+
+        window.doLogin = async function() {
+          const secret = document.getElementById('loginInput').value.trim();
+          const err    = document.getElementById('loginError');
+          const btn    = document.querySelector('#loginGate button');
+          err.style.display = 'none';
+          if (!secret) return;
+          btn.textContent = 'Checking…';
+          btn.disabled = true;
+          try {
+            if (await verify(secret)) {
+              localStorage.setItem('mfm_secret', secret);
+              showDashboard();
+              return;
+            }
+          } catch(_) {}
+          btn.textContent = 'Sign In';
+          btn.disabled = false;
+          err.style.display = 'block';
+        };
+
+        const saved = localStorage.getItem('mfm_secret');
+        if (saved) {
+          verify(saved)
+            .then(ok => { if (ok) showDashboard(); else { localStorage.removeItem('mfm_secret'); showLogin(); } })
+            .catch(() => showLogin());
+        } else {
+          showLogin();
+        }
+      })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/dashboard.js"></script>
+  </body>
+</html>

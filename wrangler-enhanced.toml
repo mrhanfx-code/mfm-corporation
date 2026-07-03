@@ -1,0 +1,146 @@
+# MFM Corporation Enhanced Telegram Bot Configuration
+# Advanced AI System with Enterprise Security
+
+name = "mfm-corporation-telegram-bot"
+main = "src/telegram-bot.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Enhanced Environment Variables
+[env.production]
+name = "mfm-corporation-telegram-bot"
+routes = [
+  { pattern = "mfm-corporation-telegram-bot.mrhan-fx.workers.dev/telegram-webhook", custom_domain = false }
+]
+
+# Core Environment Variables
+[env.production.vars]
+# Telegram Configuration
+TELEGRAM_BOT_TOKEN = "8789903271:AAHsfvQLYJnun3-WBMVCDgfcMjszEYY5uuU"
+AUTHORIZED_USER_IDS = "6847462500"
+WEBHOOK_SECRET = "mfm-webhook-2024-secure-key-abc123xyz789"
+
+# SendGrid Email Configuration
+SENDGRID_API_KEY = "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"
+CEO_EMAIL = "remy@mfm-corporation.com"
+USER_EMAIL = "muhdfarihan@gmail.com"
+
+# AI System Configuration
+AI_MODEL_TEMPERATURE = "0.7"
+AI_MAX_TOKENS = "2000"
+AI_RESPONSE_TIMEOUT = "30000"
+
+# Security Configuration
+RATE_LIMIT_REQUESTS = "30"
+RATE_LIMIT_WINDOW = "60000"
+MAX_MESSAGE_SIZE = "1048576"
+MAX_ATTACHMENT_SIZE = "20971520"
+
+# Memory and Context Configuration
+MEMORY_RETENTION_DAYS = "30"
+CONTEXT_MAX_SIZE = "50"
+LEARNING_ENABLED = "true"
+
+# Multi-Modal Processing
+ENABLE_IMAGE_PROCESSING = "true"
+ENABLE_DOCUMENT_PROCESSING = "true"
+ENABLE_AUDIO_PROCESSING = "true"
+ENABLE_VIDEO_PROCESSING = "true"
+
+# Monitoring and Logging
+LOG_LEVEL = "info"
+AUDIT_LOG_RETENTION = "90"
+METRICS_ENABLED = "true"
+
+# KV Namespaces
+[[env.production.kv_namespaces]]
+binding = "KV"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# D1 Database
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "mfm-corporation-db"
+database_id = "your-database-id"
+
+# R2 Storage
+[[env.production.r2_buckets]]
+binding = "R2"
+bucket_name = "mfm-corporation-storage"
+
+# Email Webhook Worker
+[[env.production.workers]]
+name = "mfm-email-webhook"
+route = { pattern = "mfm-email-webhook.mrhan-fx.workers.dev/email-webhook", custom_domain = false }
+
+[env.production.workers.vars]
+TELEGRAM_BOT_TOKEN = "8789903271:AAHsfvQLYJnun3-WBMVCDgfcMjszEYY5uuU"
+WEBHOOK_SECRET = "mfm-webhook-2024-secure-key-abc123xyz789"
+CEO_EMAIL = "remy@mfm-corporation.com"
+
+# Development Environment
+[env.development]
+name = "mfm-corporation-telegram-bot-dev"
+
+[env.development.vars]
+# Same variables as production but with development values
+TELEGRAM_BOT_TOKEN = "your-dev-bot-token"
+AUTHORIZED_USER_IDS = "your-dev-user-id"
+WEBHOOK_SECRET = "dev-webhook-secret"
+SENDGRID_API_KEY = "your-dev-sendgrid-key"
+CEO_EMAIL = "dev-ceo@example.com"
+USER_EMAIL = "dev-user@example.com"
+
+# Development KV and D1
+[[env.development.kv_namespaces]]
+binding = "KV"
+id = "your-dev-kv-namespace-id"
+
+[[env.development.d1_databases]]
+binding = "DB"
+database_name = "mfm-corporation-db-dev"
+database_id = "your-dev-database-id"
+
+# Staging Environment
+[env.staging]
+name = "mfm-corporation-telegram-bot-staging"
+
+[env.staging.vars]
+# Staging configuration
+TELEGRAM_BOT_TOKEN = "your-staging-bot-token"
+AUTHORIZED_USER_IDS = "your-staging-user-id"
+WEBHOOK_SECRET = "staging-webhook-secret"
+SENDGRID_API_KEY = "your-staging-sendgrid-key"
+CEO_EMAIL = "staging-ceo@example.com"
+USER_EMAIL = "staging-user@example.com"
+
+# Enhanced Limits and Configuration
+[limits]
+cpu_ms = 50000
+memory_mb = 128
+
+# Build Configuration
+[build]
+command = "npm run build"
+watch_dir = "src"
+
+# Triggers Configuration
+[[triggers]]
+crons = ["0 */6 * * *"]  # Every 6 hours for cleanup
+
+# Queue Configuration
+[[queues]]
+binding = "EMAIL_QUEUE"
+max_batch_size = 10
+max_batch_timeout = 30
+
+# Durable Objects Configuration
+[[durable_objects.bindings]]
+name = "CONVERSATION_STATE"
+class_name = "ConversationState"
+
+# Analytics Configuration
+[analytics]
+enabled = true
+sampling_rate = 0.1
