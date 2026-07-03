@@ -26,7 +26,7 @@ async function request<T>(
         Authorization: `Bearer ${SECRET}`,
         ...options?.headers,
       },
-      next: { revalidate: 0 },
+      next: { revalidate: 60, tags: ['workers-api'] },
     });
 
     if (!res.ok) {
