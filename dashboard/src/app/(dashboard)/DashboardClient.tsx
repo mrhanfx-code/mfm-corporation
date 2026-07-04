@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import AgentGrid from "@/components/dashboard/AgentGrid";
 import ChatPanel from "@/components/dashboard/ChatPanel";
 import type { Agent } from "@/components/dashboard/AgentCard";
+import type { View } from "@/components/layout/Sidebar";
 
 interface DashboardClientProps {
   agents: Agent[];
@@ -18,7 +19,7 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ agents, stats }: DashboardClientProps) {
-  const [activeTeam, setActiveTeam] = useState("all");
+  const [activeTeam, setActiveTeam] = useState<View>("all");
 
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
