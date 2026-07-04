@@ -25,25 +25,6 @@ interface LogEntry {
 
 const WORKER_URL = 'https://mfm-corporation-telegram-bot.mrhan-fx.workers.dev';
 
-const FALLBACK_AGENTS: Agent[] = [
-  { id: 'MK-084', name: 'Brand Sentiment Analyst', team: 'Marketing', status: 'running', load: 84 },
-  { id: 'ENG-112', name: 'Refactoring Specialist', team: 'Engineering', status: 'running', load: 42 },
-  { id: 'CS-004', name: 'Escalation Resolver', team: 'Success', status: 'idle', load: 0 },
-  { id: 'DATA-22', name: 'Anomalous Log Detector', team: 'Data', status: 'running', load: 95 },
-  { id: 'EXE-01', name: 'Strategic KPI Forecaster', team: 'Strategy', status: 'running', load: 12 },
-  { id: 'MK-102', name: 'Ad Copy Generator', team: 'Marketing', status: 'error', load: 0 },
-  { id: 'ENG-204', name: 'Unit Test Scripter', team: 'Engineering', status: 'running', load: 66 },
-  { id: 'DATA-09', name: 'ETL Pipeline Guard', team: 'Data', status: 'idle', load: 0 }
-];
-
-const FALLBACK_LOGS: LogEntry[] = [
-  { time: '14:22:01.04', id: 'ENG-112', op: 'code_optimization', status: 'SUCCESS', lat: '124ms' },
-  { time: '14:21:58.92', id: 'MK-084', op: 'social_sentiment_scrape', status: 'SUCCESS', lat: '842ms' },
-  { time: '14:21:55.10', id: 'MK-102', op: 'creative_generation', status: 'FAILED', lat: '20ms' },
-  { time: '14:21:48.33', id: 'DATA-22', op: 'log_ingestion_audit', status: 'SUCCESS', lat: '12ms' },
-  { time: '14:21:40.01', id: 'CS-004', op: 'wait_for_trigger', status: 'IDLE', lat: '--' }
-];
-
 function agentNameToTeam(name: string): string {
   const n = name.toLowerCase();
   if (/social|media|market|brand|content|creative|ads|campaign/.test(n)) return 'Marketing';
@@ -126,8 +107,8 @@ function LoginGate({ onAuth }: { onAuth: () => void }) {
 export function DashboardNew() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [agents, setAgents] = useState<Agent[]>(FALLBACK_AGENTS);
-  const [logs, setLogs] = useState<LogEntry[]>(FALLBACK_LOGS);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [activeNav, setActiveNav] = useState('All Agents');
@@ -135,7 +116,7 @@ export function DashboardNew() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [logsModal, setLogsModal] = useState<{ open: boolean; agentId: string | null; title: string }>({ open: false, agentId: null, title: '' });
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
-  const [dataSource, setDataSource] = useState<'live' | 'mock'>('mock');
+  const [dataSource, setDataSource] = useState<'live' | 'mock'>('live');
 
   const fetchLiveData = useCallback(async () => {
     const secret = localStorage.getItem('mfm_secret') || '';
