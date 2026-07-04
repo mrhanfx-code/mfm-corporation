@@ -8,6 +8,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Skip API call if environment variables not set (build time)
+  if (!process.env.WORKERS_API_URL || !process.env.DASHBOARD_SECRET) {
+    return NextResponse.json([]);
+  }
+
   const { data, error, status } = await workersApi.get("/api/v1/dashboard/agents");
 
   if (error) {

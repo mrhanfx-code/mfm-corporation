@@ -3,8 +3,11 @@ import "server-only";
 const BASE_URL = process.env.WORKERS_API_URL;
 const SECRET = process.env.DASHBOARD_SECRET;
 
-if (!BASE_URL) throw new Error("WORKERS_API_URL is not set");
-if (!SECRET) throw new Error("DASHBOARD_SECRET is not set");
+// Don't throw during build time, only at runtime
+if (typeof window !== 'undefined') {
+  if (!BASE_URL) throw new Error("WORKERS_API_URL is not set");
+  if (!SECRET) throw new Error("DASHBOARD_SECRET is not set");
+}
 
 interface ApiResponse<T> {
   data: T | null;

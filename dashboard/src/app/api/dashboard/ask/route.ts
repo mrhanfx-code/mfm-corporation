@@ -9,6 +9,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Skip API call if environment variables not set (build time)
+  if (!process.env.WORKERS_API_URL || !process.env.DASHBOARD_SECRET) {
+    return NextResponse.json({ error: "Service unavailable during build" }, { status: 503 });
+  }
+
   const sessionId = (session.user as { id?: string })?.id ?? "unknown";
   const limit = checkRateLimit(sessionId);
 
