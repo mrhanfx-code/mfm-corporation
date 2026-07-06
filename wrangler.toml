@@ -23,6 +23,7 @@ invocation_logs = true
 #   DASHBOARD_SECRET (for /ask endpoint)
 [vars]
 ENVIRONMENT = "production"
+VERSION = "1.0.2"
 AUTHORIZED_USER_IDS = "6847462500"
 CEO_EMAIL = "remy@mfm-corporation.com"
 USER_EMAIL = "muhdfarihan@gmail.com"
@@ -58,6 +59,7 @@ queue    = "mfm-task-queue"
 queue            = "mfm-task-queue"
 max_batch_size   = 5
 max_batch_timeout = 30
+script           = "queue-consumer"
 
 # Scheduled cron triggers (MYT = UTC+8)
 # 00:00 UTC = 08:00 MYT — morning briefing

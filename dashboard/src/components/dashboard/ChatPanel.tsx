@@ -29,21 +29,26 @@ export default function ChatPanel() {
     setMessages((prev) => [...prev, { role: "user", content: message }]);
     setLoading(true);
 
-    const { data, error: reqError, status } = await api.post<{ reply?: string; message?: string }>("/ask", { message });
+    try {
+      const { data, error: reqError, status } = await api.post<{ reply?: string; message?: string }>("/ask", { message });
 
-    setLoading(false);
-
-    if (reqError) {
-      if (status === 429) {
-        setError("Rate limit reached. Please wait a moment before sending another message.");
-      } else {
-        setError("Failed to get a response. Please try again.");
+      if (reqError) {
+        if (status === 429) {
+          setError("Rate limit reached. Please wait a moment before sending another message.");
+        } else {
+          setError("Failed to get a response. Please try again.");
+        }
+        return;
       }
-      return;
-    }
 
-    const reply = data?.reply ?? data?.message ?? "No response.";
-    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      const reply = data?.reply ?? data?.message ?? "No response.";
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch (err) {
+      console.error("Error in handleSubmit:", err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

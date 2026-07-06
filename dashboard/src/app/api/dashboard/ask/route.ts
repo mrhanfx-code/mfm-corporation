@@ -9,6 +9,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Skip API call if environment variables not set (build time)
+  if (!process.env.WORKERS_API_URL || !process.env.DASHBOARD_SECRET) {
+    return NextResponse.json({ error: "Service unavailable during build" }, { status: 503 });
+  }
+
   const sessionId = (session.user as { id?: string })?.id ?? "unknown";
   const limit = checkRateLimit(sessionId);
 
@@ -40,15 +45,17 @@ export async function POST(req: NextRequest) {
 
   const sanitizedMessage = body.message.trim().slice(0, 2000);
 
-  const { data, error, status } = await workersApi.post("/ask", {
-    message: sanitizedMessage,
+  const { data, error, status } = await workersApi.post("/dashboard/ask", {
+    text: sanitizedMessage,
   });
 
   if (error) {
+    console.error('[Dashboard API] Backend error:', error, status);
     const clientStatus = status === 401 || status === 403 ? 502 : status;
     return NextResponse.json({ error: "Backend service error. Please try again." }, { status: clientStatus });
   }
 
+  console.log('[Dashboard API] Backend response:', data);
   return NextResponse.json(data, {
     headers: {
       "X-RateLimit-Remaining": String(limit.remaining),

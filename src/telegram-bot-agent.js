@@ -4,6 +4,7 @@
 import { routeMessage } from './core/orchestrator.js';
 import { sendTelegramMessage, sendTyping } from './tools/telegram-tool.js';
 import { handleDashboardAPI } from './dashboard/dashboard-worker.js';
+import { processQueuedJob } from './tools/fal-ai-wrapper.js';
 
 const REQUIRED = ['TELEGRAM_BOT_TOKEN', 'WEBHOOK_SECRET', 'OPENROUTER_API_KEY'];
 
@@ -362,6 +363,16 @@ export default {
   async queue(batch, env) {
     for (const msg of batch.messages) {
       try {
+        // Check if this is a video rendering job
+        if (msg.body && msg.body.jobId && msg.body.params) {
+          console.log('[Queue Consumer] Processing video rendering job:', msg.id);
+          const result = await processQueuedJob(msg, env);
+          console.log('[Queue Consumer] Video job processed successfully:', result.jobId);
+          msg.ack();
+          continue;
+        }
+
+        // Handle regular async tasks
         const { chatId, userId, text, taskType } = msg.body;
         if (!chatId || !userId || !text) { msg.ack(); continue; }
 

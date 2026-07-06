@@ -4,13 +4,13 @@ import { callLLM, parseJSON, MODELS } from './llm-client.js';
 import { alertLowQualityScore } from '../tools/alerting.js';
 import { CircuitBreaker } from './circuit-breaker.js';
 import { runPanel, PANELS, shouldUsePanel, pickPanel } from './multi-agent-panel.js';
-import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory, getTopPerformingAgents, updateRoutingScore } from '../tools/d1-store.js';
+import { logDecision, getAllRecentTasks, getAllMetrics, getRecentTasks, clearAllMemory, getTopPerformingAgents, updateRoutingScore, setTaskContentType } from '../tools/d1-store.js';
 import { nl2sqlQuery } from '../tools/nl2sql-tool.js';
 import { syncRoutingDecision, syncCeoCommand } from '../tools/supabase-bridge.js';
 import { reviewOutput } from './quality-reviewer.js';
 import { AgentBase } from './agent-base.js';
 import { buildContextCard } from './context-card.js';
-import { emitDashboardEvent } from '../tools/dashboard-events.js';
+import { emitAgentStatus } from '../tools/dashboard-events.js';
 
 import { OpsCoordinator } from '../agents/coo/ops-coordinator.js';
 import { StrategicPlanner } from '../agents/coo/strategic-planner.js';
@@ -36,11 +36,15 @@ import { QAEngineer } from '../agents/cto/qa-engineer.js';
 import { DatabaseSpecialist } from '../agents/cto/database-specialist.js';
 import { CloudEngineer } from '../agents/cto/cloud-engineer.js';
 import { ContentWriter } from '../agents/cmo/content-writer.js';
+import { MediaContentDirector } from '../agents/cmo/media-content-director.js';
 import { MediaProducer } from '../agents/cmo/media-producer.js';
 import { MarketAnalyst } from '../agents/cmo/market-analyst.js';
 import { CustomerSuccessAgent } from '../agents/cmo/customer-success-agent.js';
 import { SocialMediaAgent } from '../agents/cmo/social-media-agent.js';
 import { EmailMarketingAgent } from '../agents/cmo/email-marketing-agent.js';
+import { BrandStrategist } from '../agents/cmo/brand-strategist.js';
+import { CampaignManager } from '../agents/cmo/campaign-manager.js';
+import { AudienceAnalyst } from '../agents/cmo/audience-analyst.js';
 import { FinancePlanner } from '../agents/cfo/finance-planner.js';
 import { RiskAssessor } from '../agents/cfo/risk-assessor.js';
 import { GrantTracker } from '../agents/cfo/grant-tracker.js';
@@ -56,6 +60,7 @@ import { DataAnalyst } from '../agents/cino/data-analyst.js';
 import { LegalAdvisor } from '../agents/clo/legal-advisor.js';
 import { generateImage, formatImageResponse } from '../tools/image-tool.js';
 import { createRepo, pushFile, pushMultipleFiles, listRepos, triggerWorkflow } from '../tools/github-tool.js';
+import { submitRenderingJob, queueRenderingJob, estimateCost } from '../tools/fal-ai-wrapper.js';
 
 const ORCHESTRATOR_MODEL = MODELS.CEREBRAS_FAST;
 
@@ -75,7 +80,7 @@ COMPANY IDENTITY (memorise this — never invent alternative descriptions):
 Respond ONLY with valid JSON:
 {
   "department": "coo|cto|cmo|cfo|cino|clo|direct",
-  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct",
+  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|media-content-director|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|brand-strategist|campaign-manager|audience-analyst|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct",
   "task_type": "brief task description",
   "urgency": "high|medium|low",
   "reasoning": "one sentence"
@@ -106,11 +111,15 @@ Routing rules:
 - cto/database-specialist: D1 schema design, query optimisation, migrations, data governance
 - cto/cloud-engineer: Cloudflare platform, wrangler, edge deployment, free tier limits
 - cmo/content-writer: write emails, posts, announcements, reports, copy
-- cmo/market-analyst: market research, competitor analysis, industry news
+- cmo/media-content-director: storyboard generation, structured video content planning, platform-specific captions, rendering instructions
+- cmo/market-analyst: market research, competitor analysis, industry news, market trends, market opportunity analysis
 - cmo/customer-success-agent: client relations, customer feedback, retention, support
 - cmo/social-media-agent: post to Facebook, Instagram, TikTok; social media content, captions, hashtags, scheduling
 - cmo/media-producer: video production, podcast, multimedia briefs, visual brand campaigns, content production strategy
 - cmo/email-marketing-agent: email campaigns, newsletters, cold outreach, nurture sequences, SendGrid
+- cmo/brand-strategist: brand identity, brand voice, brand strategy, brand positioning, differentiation, messaging frameworks, visual identity guidelines, brand consistency audits
+- cmo/campaign-manager: campaign planning, channel selection, timeline scheduling, budget allocation, performance tracking
+- cmo/audience-analyst: audience segmentation, buyer personas, market opportunity analysis, channel preference analysis
 - cfo/finance-planner: budgets, forecasts, costs, revenue, financial planning
 - cfo/risk-assessor: risk analysis, mitigation, compliance, liability
 - cfo/grant-tracker: identify and track Malaysian grants (MDEC, SME Corp, Cradle), eligibility, deadlines
@@ -145,7 +154,7 @@ const PARALLEL_KEYWORDS = {
 };
 
 // Agents that ALWAYS require CEO approval before executing (irreversible external actions)
-const ALWAYS_APPROVE_AGENTS = new Set(['social-media-agent']);
+const ALWAYS_APPROVE_AGENTS = new Set(['social-media-agent', 'media-content-director']);
 
 // Agents that require approval only on specific action keywords
 const APPROVAL_AGENTS = new Set(['customer-success-agent', 'ops-coordinator']);
@@ -157,6 +166,47 @@ function requiresApproval(agentName, text) {
   if (!APPROVAL_AGENTS.has(agentName)) return false;
   const lower = text.toLowerCase();
   return APPROVAL_KEYWORDS.some(k => lower.includes(k));
+}
+
+function detectContentType(agentName, text) {
+  const lower = text.toLowerCase();
+  
+  // Video prompt generation (manual workflow) - route to media-producer
+  if (lower.includes('video prompt') || 
+      lower.includes('create video prompt') || 
+      lower.includes('generate video prompt') ||
+      lower.includes('video prompts')) {
+    return 'video_prompt';
+  }
+  
+  // Video generation (automated rendering) - route to media-content-director
+  if (agentName === 'media-content-director' || 
+      lower.includes('generate video') || 
+      lower.includes('create video') ||
+      lower.includes('make video') ||
+      lower.includes('video') && !lower.includes('prompt') ||
+      lower.includes('reel') || 
+      lower.includes('tiktok') && lower.includes('video')) {
+    return 'video';
+  }
+  
+  // Social media publishing
+  if (ALWAYS_APPROVE_AGENTS.has(agentName) || 
+      lower.includes('post to') || 
+      lower.includes('post on') || 
+      lower.includes('publish')) {
+    return 'social_publish';
+  }
+  
+  // Email-related content
+  if (agentName === 'email-marketing-agent' || 
+      lower.includes('send email') || 
+      lower.includes('email to') || 
+      lower.includes('newsletter')) {
+    return 'email';
+  }
+  
+  return 'general';
 }
 
 function detectParallelIntent(text) {
@@ -201,6 +251,7 @@ const PANEL_AGENT_REGISTRY = {
   'tech-advisor':       () => new TechAdvisor(),
   'security-auditor':   () => new SecurityAuditor(),
   'content-writer':     () => new ContentWriter(),
+  'media-content-director': () => new MediaContentDirector(),
   'market-analyst':     () => new MarketAnalyst(),
   'media-producer':     () => new MediaProducer(),
   'innovation-analyst': () => new InnovationAnalyst(),
@@ -253,11 +304,15 @@ const AGENT_MAP = {
   'database-specialist': DatabaseSpecialist,
   'cloud-engineer': CloudEngineer,
   'content-writer': ContentWriter,
+  'media-content-director': MediaContentDirector,
   'market-analyst': MarketAnalyst,
   'customer-success-agent': CustomerSuccessAgent,
   'social-media-agent': SocialMediaAgent,
   'media-producer': MediaProducer,
   'email-marketing-agent': EmailMarketingAgent,
+  'brand-strategist': BrandStrategist,
+  'campaign-manager': CampaignManager,
+  'audience-analyst': AudienceAnalyst,
   'finance-planner': FinancePlanner,
   'risk-assessor': RiskAssessor,
   'grant-tracker': GrantTracker,
@@ -277,11 +332,28 @@ export async function routeMessage(message, userId, env) {
   const text = (message.text || '').trim();
   const isUrgent = message.urgent || false;
 
+  // ── Brand strategist keyword fallback (before LLM routing) ──
+  const brandKeywords = ['brand identity', 'brand voice', 'brand strategy', 'brand positioning', 'brand differentiation', 'messaging framework', 'visual identity', 'brand consistency'];
+  if (brandKeywords.some(k => text.toLowerCase().includes(k))) {
+    const AgentClass = AGENT_MAP['brand-strategist'];
+    if (AgentClass) {
+      const agent = new AgentClass();
+      const contextCard = await buildContextCard('brand-strategist', env);
+      return await agent.run(text, userId, env, { contextCard });
+    }
+  }
+
   if (text.startsWith('/')) {
     return await handleSlashCommand(text, userId, env);
   }
 
   const lowerText = text.toLowerCase();
+
+  // ── Approval keyword intercept ──
+  const approvalKeywords = ['approve', 'yes approve', 'yes, approve', 'approved', 'go ahead', 'post it', 'yes post it'];
+  if (approvalKeywords.some(k => lowerText.includes(k))) {
+    return await handleSlashCommand('/approve', userId, env);
+  }
 
   // ── Tool/secret status intercept — never route to LLM ──
   const toolQueryKw = ['what tools', 'which tools', 'tools configured', 'what secrets', 'which secrets', 'secrets configured', 'api keys', 'what api', 'missing keys', 'what is configured', "what's configured", 'tool status', 'secret status', 'check secrets', 'check tools'];
@@ -365,18 +437,30 @@ export async function routeMessage(message, userId, env) {
       const agent = new AgentClass();
       const draft = await agent.run(text, userId, env, { ...agentOptions, draftMode: true });
 
+      const contentType = detectContentType(routing.agent, text);
+
       if (env.KV) {
         await env.KV.put(
           `pending:${userId}`,
-          JSON.stringify({ text, agentName: routing.agent }),
+          JSON.stringify({ text, agentName: routing.agent, contentType }),
           { expirationTtl: 3600 }
         );
       }
 
       const isSocial = ALWAYS_APPROVE_AGENTS.has(routing.agent);
-      const approvalMsg = isSocial
-        ? `📱 *[SOCIAL MEDIA DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Nothing has been posted yet.*\n✅ Reply */approve* to post now  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`
-        : `📋 *[DRAFT — ${routing.agent.replace(/-/g, ' ').toUpperCase()}]*\n\n${draft}\n\n---\n✅ Reply */approve* to execute  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_`;
+      const isVideo = contentType === 'video';
+      const isEmail = contentType === 'email';
+      
+      let approvalMsg;
+      if (isSocial) {
+        approvalMsg = `📱 *[SOCIAL MEDIA DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Nothing has been posted yet.*\n✅ Reply */approve* to post now  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`;
+      } else if (isVideo) {
+        approvalMsg = `🎬 *[VIDEO DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Video rendering will trigger after approval.*\n✅ Reply */approve* to render  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`;
+      } else if (isEmail) {
+        approvalMsg = `📧 *[EMAIL DRAFT — AWAITING YOUR APPROVAL]*\n\n${draft}\n\n---\n⚠️ *Email will be sent after approval.*\n✅ Reply */approve* to send  |  ❌ Reply */reject* to cancel\n_(Auto-expires in 1 hour)_`;
+      } else {
+        approvalMsg = `📋 *[DRAFT — ${routing.agent.replace(/-/g, ' ').toUpperCase()}]*\n\n${draft}\n\n---\n✅ Reply */approve* to execute  |  ❌ Reply */reject* to cancel\n_(Expires in 1 hour)_`;
+      }
       return approvalMsg;
     }
 
@@ -412,9 +496,8 @@ export async function routeMessage(message, userId, env) {
     const output = header + finalResponse;
     syncCeoCommand({ command: text, userId, response: output }, env).catch(() => {});
     
-    // Emit dashboard event for task completion
+    // Emit dashboard event for agent status
     emitAgentStatus(env, routing.agent, 'active', text).catch(() => {});
-    emitTaskUpdate(env, taskId, 'completed', review.score).catch(() => {});
     
     return output;
 
@@ -491,19 +574,61 @@ async function handleSlashCommand(text, userId, env) {
       if (!env.KV) return '⚠️ KV not configured.';
       const raw = await env.KV.get(`pending:${userId}`);
       if (!raw) return '⚠️ No pending action found. It may have expired (1h TTL).';
-      const { text: pendingText, agentName, editCount, lastEdit } = JSON.parse(raw);
+      const { text: pendingText, agentName, contentType, editCount, lastEdit } = JSON.parse(raw);
       await env.KV.delete(`pending:${userId}`);
       const AgentClass = AGENT_MAP[agentName];
       if (!AgentClass) return '⚠️ Agent not found for pending action.';
+      
+      // Special handling for social-media-agent - skip schema validation and directly post
+      if (agentName === 'social-media-agent') {
+        try {
+          const { socialPost } = await import('../tools/social-post.js');
+          // Extract the approved content from the pending text (it's the draft that was shown)
+          const result = await socialPost({ platform: 'linkedin', content: pendingText }, env);
+          const review = await reviewOutput(agentName, 'approved-action', result, env);
+          return `✅ *Posted to LinkedIn*\n\n${result}\n\n${review.feedback}`;
+        } catch (e) {
+          return `⚠️ Failed to post: ${e.message}`;
+        }
+      }
+      
       const contextCard = await buildContextCard(agentName, env);
       const agentInst = new AgentClass();
       let runText = pendingText;
       if (editCount && editCount > 0) {
         runText = pendingText + '\n\nAdditional instructions from CEO (edit #' + editCount + '): ' + lastEdit;
       }
+      
+      // Execute the agent
       const result = await agentInst.run(runText, userId, env, { contextCard });
       const review = await reviewOutput(agentName, 'approved-action', result, env);
       agentInst.finalizeScore(review.score, env).catch(() => {});
+      
+      // If video content, trigger fal.ai rendering
+      if (contentType === 'video' && agentName === 'media-content-director') {
+        try {
+          const storyboard = JSON.parse(result);
+          const totalDuration = storyboard.storyboard.reduce((sum, scene) => sum + scene.duration_seconds, 0);
+          const costEstimate = estimateCost('fal-ai/flux-schnell/v1.1', totalDuration);
+          
+          // Queue rendering job
+          const jobId = `render_${Date.now()}`;
+          await queueRenderingJob({
+            jobId,
+            userId,
+            params: {
+              model: 'fal-ai/flux-schnell/v1.1',
+              storyboard: storyboard.storyboard,
+              rendering_instructions: storyboard.rendering_instructions
+            }
+          }, env);
+          
+          return `✅ *Approved & Queued for Rendering — [MEDIA CONTENT DIRECTOR]* _(score: ${review.score}/100)_\n\n${review.improved_response || result}\n\n---\n🎬 *Video Rendering Queued*\n\n• Job ID: ${jobId}\n• Duration: ${totalDuration}s\n• Estimated Cost: $${costEstimate.estimatedCost}\n• Model: fal-ai/flux-schnell/v1.1\n\nRendering will complete in the background. You'll be notified when ready.`;
+        } catch (renderError) {
+          return `✅ *Approved — [MEDIA CONTENT DIRECTOR]* _(score: ${review.score}/100)_\n\n${review.improved_response || result}\n\n---\n⚠️ *Rendering Failed:* ${renderError.message}\n\nStoryboard generated but video rendering encountered an error. Check fal.ai API key and Queue configuration.`;
+        }
+      }
+      
       return '✅ *Approved & Executed — [' + agentName.replace(/-/g, ' ').toUpperCase() + ']* _(score: ' + review.score + '/100)_\n\n' + (review.improved_response || result);
     }
 

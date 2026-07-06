@@ -1,14 +1,16 @@
 "use client";
 
+export type View = "dashboard" | "agents" | "tasks" | "metrics" | "org-chart" | "settings" | "logs" | "all" | "marketing" | "engineering" | "customer" | "data" | "executive" | "coo" | "cto" | "cmo" | "cfo" | "cino" | "clo";
+
 interface NavItem {
   label: string;
-  id: string;
+  id: View;
   icon?: string;
 }
 
 interface SidebarProps {
-  activeTeam: string;
-  onTeamChange: (team: string) => void;
+  activeTeam: View;
+  onTeamChange: (team: View) => void;
 }
 
 const TEAMS: NavItem[] = [

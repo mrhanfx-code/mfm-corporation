@@ -1,6 +1,6 @@
 // AgentBase — base class for all MFM Corporation agents
 
-import { callLLM } from './llm-client.js';
+import { callLLM, parseJSON } from './llm-client.js';
 import { logger } from './logger.js';
 import { saveMemory, getMemory, saveTask, completeTask, updateTaskScore, logDecision, updateMetrics, clearMemory as d1ClearMemory } from '../tools/d1-store.js';
 import { fetchWebContent } from '../tools/web-fetch.js';
@@ -13,7 +13,6 @@ import { listCalendarEvents, createCalendarEvent, findFreeSlot } from '../tools/
 import { listDriveFolder, readDriveFile, writeDriveFile, searchDriveFiles } from '../tools/google-drive-tool.js';
 import { generatePDF, generateReportPDF } from '../tools/pdf-tool.js';
 import { sendSMS } from '../tools/sms-tool.js';
-import { emitAgentStatus, emitTaskUpdate } from '../tools/dashboard-events.js';
 import { createRepo, pushFile, listRepos } from '../tools/github-tool.js';
 
 const INPUT_MAX_CHARS    = 4000;
@@ -135,11 +134,12 @@ function parseToolCalls(text) {
 }
 
 export class AgentBase {
-  constructor({ name, model, systemPrompt, tools = [] }) {
+  constructor({ name, model, systemPrompt, tools = [], outputSchema = null }) {
     this.name = name;
     this.model = model;
     this.systemPrompt = systemPrompt;
     this.tools = tools;
+    this.outputSchema = outputSchema;
   }
 
   _validateInput(input) {
@@ -148,6 +148,17 @@ export class AgentBase {
     if (!cleaned) return { error: 'Empty input.' };
     if (cleaned.length > INPUT_MAX_CHARS) return { error: `Input too long (${cleaned.length} chars, max ${INPUT_MAX_CHARS}).` };
     return { cleaned };
+  }
+
+  _validateSchema(parsed, schema) {
+    if (!schema || typeof schema !== 'object') return true;
+    for (const key in schema) {
+      if (!(key in parsed)) {
+        logger.warn(this.name, 'schema_validation_failed', { missingKey: key });
+        return false;
+      }
+    }
+    return true;
   }
 
   async run(userMessage, userId, env, options = {}) {
@@ -160,9 +171,6 @@ export class AgentBase {
       return `⚠️ ${validation.error}`;
     }
     const cleanMessage = validation.cleaned;
-
-    // Emit agent status to dashboard
-    emitAgentStatus(env, this.name, 'active', cleanMessage).catch(() => {});
 
     // Per-agent rate limiting: max 20 req/min per agent
     if (env.KV) {
@@ -199,6 +207,34 @@ export class AgentBase {
 
         result = await callLLM(this.model, loopMessages, env, options);
         logger.info(this.name, 'llm_call', { loop: i, provider: result?.provider, model: result?.model });
+
+        // Structured output validation with retry
+        if (this.outputSchema) {
+          for (let retry = 0; retry < 2; retry++) {
+            try {
+              const parsed = parseJSON(result.content);
+              if (!parsed) {
+                throw new Error('No valid JSON found in response');
+              }
+              if (this._validateSchema(parsed, this.outputSchema)) {
+                result.content = JSON.stringify(parsed, null, 2);
+                logger.info(this.name, 'schema_validated', { retry });
+                break;
+              }
+            } catch (e) {
+              if (retry === 1) {
+                logger.error(this.name, 'schema_validation_failed', { error: e.message });
+                throw new Error('JSON validation failed after retries');
+              }
+              logger.warn(this.name, 'schema_validation_retry', { retry, error: e.message });
+              loopMessages.push({
+                role: 'user',
+                content: `Your response was not valid JSON matching the required schema. Please fix it. Schema: ${JSON.stringify(this.outputSchema)}`
+              });
+              result = await callLLM(this.model, loopMessages, env, options);
+            }
+          }
+        }
 
         const toolCalls = parseToolCalls(result.content);
         if (!toolCalls.length) break;

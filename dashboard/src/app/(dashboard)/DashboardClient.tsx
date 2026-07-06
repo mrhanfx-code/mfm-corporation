@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import AgentGrid from "@/components/dashboard/AgentGrid";
 import ChatPanel from "@/components/dashboard/ChatPanel";
 import type { Agent } from "@/components/dashboard/AgentCard";
+import type { View } from "@/components/layout/Sidebar";
 
 interface DashboardClientProps {
   agents: Agent[];
@@ -18,7 +19,25 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ agents, stats }: DashboardClientProps) {
-  const [activeTeam, setActiveTeam] = useState("all");
+  const [activeTeam, setActiveTeam] = useState<View>("all");
+
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error("Global error:", event.error);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled promise rejection:", event.reason);
+    };
+
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    };
+  }, []);
 
   return (
     <>

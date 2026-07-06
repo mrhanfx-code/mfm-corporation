@@ -25,6 +25,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Skip API call if environment variables not set (build time)
+  if (!process.env.WORKERS_API_URL || !process.env.DASHBOARD_SECRET) {
+    return NextResponse.json([]);
+  }
+
   const limitParam = req.nextUrl.searchParams.get("limit");
   const limit = Math.min(parseInt(limitParam ?? "20", 10) || 20, 50);
 

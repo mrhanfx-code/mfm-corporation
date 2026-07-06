@@ -34,9 +34,14 @@ export default function AgentCard({ agent, onStopped }: AgentCardProps) {
   const handleStop = async () => {
     setStopModal(false);
     setLoading(true);
-    await api.post(`/agents`, { action: "stop", agentId: agent.id });
-    setLoading(false);
-    onStopped?.(agent.id);
+    try {
+      await api.post(`/agents`, { action: "stop", agentId: agent.id });
+      onStopped?.(agent.id);
+    } catch (err) {
+      console.error("Error stopping agent:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

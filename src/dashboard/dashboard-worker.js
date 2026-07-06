@@ -2,6 +2,7 @@
 // Provides REST API endpoints for dashboard frontend
 
 import { validateToken, generateAccessToken } from '../core/jwt-auth.js';
+import { generateImage } from '../tools/image-tool.js';
 
 export async function handleDashboardAPI(request, env, path) {
   const url = new URL(request.url);
@@ -19,9 +20,13 @@ export async function handleDashboardAPI(request, env, path) {
   };
   
   try {
+    // Handle OPTIONS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
     // POST /api/v1/dashboard/auth/login - JWT token generation
     if (path === '/api/v1/dashboard/auth/login' && request.method === 'POST') {
-      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
       let body;
       try { body = await request.json(); } catch {
         return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -47,12 +52,48 @@ export async function handleDashboardAPI(request, env, path) {
       }
     }
 
-    // Validate JWT token for protected endpoints
-    const token = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim();
-    if (path !== '/api/v1/dashboard/auth/login' && request.method !== 'OPTIONS') {
-      const payload = await validateToken(token, env);
-      if (!payload) {
+    // POST /api/v1/dashboard/ask - Chat endpoint (accepts DASHBOARD_SECRET)
+    if (path === '/api/v1/dashboard/ask' && request.method === 'POST') {
+      const token = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim();
+      if (token !== env.DASHBOARD_SECRET) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      let body;
+      try { body = await request.json(); } catch {
+        return new Response(JSON.stringify({ error: 'Bad Request' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      if (!body?.message) {
+        return new Response(JSON.stringify({ error: 'Missing message' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      // Simple echo response for now - would normally route to orchestrator
+      return new Response(JSON.stringify({ 
+        response: `Echo: ${body.message}`,
+        timestamp: new Date().toISOString()
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Validate JWT token for other protected endpoints
+    const token = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim();
+    if (path !== '/api/v1/dashboard/auth/login' && path !== '/api/v1/dashboard/ask') {
+      // Allow DASHBOARD_SECRET or WORKERS_API_SECRET as alternative to JWT for dashboard API
+      if ((env.DASHBOARD_SECRET && token === env.DASHBOARD_SECRET) || 
+          (env.WORKERS_API_SECRET && token === env.WORKERS_API_SECRET)) {
+        // Dashboard secret authenticated - proceed
+      } else if (env.JWT_SECRET) {
+        // Only attempt JWT validation if JWT_SECRET is configured
+        const payload = await validateToken(token, env);
+        if (!payload) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      } else {
+        // No valid authentication method
+        return new Response(JSON.stringify({ error: 'Unauthorized - no valid auth configured' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
 
@@ -82,6 +123,11 @@ export async function handleDashboardAPI(request, env, path) {
     // GET /api/v1/dashboard/metrics - Performance metrics
     if (path === '/api/v1/dashboard/metrics' && request.method === 'GET') {
       return await getMetricsReport(env, corsHeaders);
+    }
+
+    // POST /api/v1/dashboard/generate-image - Generate AI image
+    if (path === '/api/v1/dashboard/generate-image' && request.method === 'POST') {
+      return await handleImageGeneration(request, env, corsHeaders);
     }
 
     // POST /api/v1/dashboard/commands - Send command to agent
@@ -248,4 +294,39 @@ async function sendCommand(body, env, corsHeaders) {
   }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });
+}
+
+async function handleImageGeneration(request, env, corsHeaders) {
+  try {
+    const body = await request.json();
+    const { prompt, model = 'flux' } = body;
+
+    if (!prompt) {
+      return new Response(JSON.stringify({ error: 'Prompt is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Generate image using Cloudflare Workers AI
+    const result = await generateImage(prompt, env, { model });
+
+    return new Response(JSON.stringify({
+      success: true,
+      model: model,
+      key: result.key,
+      content_type: result.contentType,
+      prompt: prompt
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('[Dashboard API] Image generation error:', error);
+    return new Response(JSON.stringify({
+      error: error.message || 'Failed to generate image'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
 }
