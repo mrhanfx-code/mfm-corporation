@@ -349,6 +349,12 @@ export async function routeMessage(message, userId, env) {
 
   const lowerText = text.toLowerCase();
 
+  // ── Approval keyword intercept ──
+  const approvalKeywords = ['approve', 'yes approve', 'yes, approve', 'approved', 'go ahead', 'post it', 'yes post it'];
+  if (approvalKeywords.some(k => lowerText.includes(k))) {
+    return await handleSlashCommand('/approve', userId, env);
+  }
+
   // ── Tool/secret status intercept — never route to LLM ──
   const toolQueryKw = ['what tools', 'which tools', 'tools configured', 'what secrets', 'which secrets', 'secrets configured', 'api keys', 'what api', 'missing keys', 'what is configured', "what's configured", 'tool status', 'secret status', 'check secrets', 'check tools'];
   if (toolQueryKw.some(k => lowerText.includes(k))) {
@@ -572,6 +578,20 @@ async function handleSlashCommand(text, userId, env) {
       await env.KV.delete(`pending:${userId}`);
       const AgentClass = AGENT_MAP[agentName];
       if (!AgentClass) return '⚠️ Agent not found for pending action.';
+      
+      // Special handling for social-media-agent - skip schema validation and directly post
+      if (agentName === 'social-media-agent') {
+        try {
+          const { socialPost } = await import('../tools/social-post.js');
+          // Extract the approved content from the pending text (it's the draft that was shown)
+          const result = await socialPost({ platform: 'linkedin', content: pendingText }, env);
+          const review = await reviewOutput(agentName, 'approved-action', result, env);
+          return `✅ *Posted to LinkedIn*\n\n${result}\n\n${review.feedback}`;
+        } catch (e) {
+          return `⚠️ Failed to post: ${e.message}`;
+        }
+      }
+      
       const contextCard = await buildContextCard(agentName, env);
       const agentInst = new AgentClass();
       let runText = pendingText;
