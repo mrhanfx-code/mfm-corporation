@@ -42,6 +42,9 @@ import { MarketAnalyst } from '../agents/cmo/market-analyst.js';
 import { CustomerSuccessAgent } from '../agents/cmo/customer-success-agent.js';
 import { SocialMediaAgent } from '../agents/cmo/social-media-agent.js';
 import { EmailMarketingAgent } from '../agents/cmo/email-marketing-agent.js';
+import { BrandStrategist } from '../agents/cmo/brand-strategist.js';
+import { CampaignManager } from '../agents/cmo/campaign-manager.js';
+import { AudienceAnalyst } from '../agents/cmo/audience-analyst.js';
 import { FinancePlanner } from '../agents/cfo/finance-planner.js';
 import { RiskAssessor } from '../agents/cfo/risk-assessor.js';
 import { GrantTracker } from '../agents/cfo/grant-tracker.js';
@@ -77,7 +80,7 @@ COMPANY IDENTITY (memorise this — never invent alternative descriptions):
 Respond ONLY with valid JSON:
 {
   "department": "coo|cto|cmo|cfo|cino|clo|direct",
-  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|media-content-director|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct",
+  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|media-content-director|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|brand-strategist|campaign-manager|audience-analyst|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct",
   "task_type": "brief task description",
   "urgency": "high|medium|low",
   "reasoning": "one sentence"
@@ -109,11 +112,14 @@ Routing rules:
 - cto/cloud-engineer: Cloudflare platform, wrangler, edge deployment, free tier limits
 - cmo/content-writer: write emails, posts, announcements, reports, copy
 - cmo/media-content-director: storyboard generation, structured video content planning, platform-specific captions, rendering instructions
-- cmo/market-analyst: market research, competitor analysis, industry news
+- cmo/market-analyst: market research, competitor analysis, industry news, market trends, market opportunity analysis
 - cmo/customer-success-agent: client relations, customer feedback, retention, support
 - cmo/social-media-agent: post to Facebook, Instagram, TikTok; social media content, captions, hashtags, scheduling
 - cmo/media-producer: video production, podcast, multimedia briefs, visual brand campaigns, content production strategy
 - cmo/email-marketing-agent: email campaigns, newsletters, cold outreach, nurture sequences, SendGrid
+- cmo/brand-strategist: brand identity, brand voice, brand strategy, brand positioning, differentiation, messaging frameworks, visual identity guidelines, brand consistency audits
+- cmo/campaign-manager: campaign planning, channel selection, timeline scheduling, budget allocation, performance tracking
+- cmo/audience-analyst: audience segmentation, buyer personas, market opportunity analysis, channel preference analysis
 - cfo/finance-planner: budgets, forecasts, costs, revenue, financial planning
 - cfo/risk-assessor: risk analysis, mitigation, compliance, liability
 - cfo/grant-tracker: identify and track Malaysian grants (MDEC, SME Corp, Cradle), eligibility, deadlines
@@ -304,6 +310,9 @@ const AGENT_MAP = {
   'social-media-agent': SocialMediaAgent,
   'media-producer': MediaProducer,
   'email-marketing-agent': EmailMarketingAgent,
+  'brand-strategist': BrandStrategist,
+  'campaign-manager': CampaignManager,
+  'audience-analyst': AudienceAnalyst,
   'finance-planner': FinancePlanner,
   'risk-assessor': RiskAssessor,
   'grant-tracker': GrantTracker,
@@ -322,6 +331,17 @@ const AGENT_MAP = {
 export async function routeMessage(message, userId, env) {
   const text = (message.text || '').trim();
   const isUrgent = message.urgent || false;
+
+  // ── Brand strategist keyword fallback (before LLM routing) ──
+  const brandKeywords = ['brand identity', 'brand voice', 'brand strategy', 'brand positioning', 'brand differentiation', 'messaging framework', 'visual identity', 'brand consistency'];
+  if (brandKeywords.some(k => text.toLowerCase().includes(k))) {
+    const AgentClass = AGENT_MAP['brand-strategist'];
+    if (AgentClass) {
+      const agent = new AgentClass();
+      const contextCard = await buildContextCard('brand-strategist', env);
+      return await agent.run(text, userId, env, { contextCard });
+    }
+  }
 
   if (text.startsWith('/')) {
     return await handleSlashCommand(text, userId, env);
