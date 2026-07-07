@@ -45,15 +45,17 @@ export async function POST(req: NextRequest) {
 
   const sanitizedMessage = body.message.trim().slice(0, 2000);
 
-  const { data, error, status } = await workersApi.post("/ask", {
-    message: sanitizedMessage,
+  const { data, error, status } = await workersApi.post("/dashboard/ask", {
+    text: sanitizedMessage,
   });
 
   if (error) {
+    console.error('[Dashboard API] Backend error:', error, status);
     const clientStatus = status === 401 || status === 403 ? 502 : status;
     return NextResponse.json({ error: "Backend service error. Please try again." }, { status: clientStatus });
   }
 
+  console.log('[Dashboard API] Backend response:', data);
   return NextResponse.json(data, {
     headers: {
       "X-RateLimit-Remaining": String(limit.remaining),
