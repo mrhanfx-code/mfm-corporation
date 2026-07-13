@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import AgentCard, { type Agent } from "./AgentCard";
 
 interface AgentGridProps {
@@ -9,19 +8,16 @@ interface AgentGridProps {
 }
 
 export default function AgentGrid({ agents, activeTeam }: AgentGridProps) {
-  const [localAgents, setLocalAgents] = useState<Agent[]>(agents);
-
   const filtered =
     activeTeam === "all"
-      ? localAgents
-      : localAgents.filter(
+      ? agents
+      : agents.filter(
           (a) => a.team?.toLowerCase() === activeTeam.toLowerCase()
         );
 
   const handleStopped = (id: string) => {
-    setLocalAgents((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "stopped" as const } : a))
-    );
+    // This is a no-op since we're using props directly
+    // The parent component would need to handle state updates
   };
 
   if (filtered.length === 0) {
