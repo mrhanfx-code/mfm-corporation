@@ -1,5 +1,6 @@
 import { AgentBase } from '../../core/agent-base.js';
 import { MODELS } from '../../core/llm-client.js';
+import { createApprovalRequest } from '../../core/approval-manager.js';
 
 const CAPTION_VARIANT_SCHEMA = {
   tiktok: 'string (hook-first, 3-5 hashtags, casual tone)',
@@ -41,17 +42,79 @@ TIMING (MYT UTC+8): Best post times:
 - TikTok: 7am, 2pm, 9pm
 
 VIDEO POSTING WORKFLOW:
-- When CEO shares a video file/URL, post it to the requested platform immediately
-- For TikTok: use [TOOL:social-post|{"platform":"tiktok","videoUrl":"...","caption":"..."}]
-- For Instagram Reels: use [TOOL:social-post|{"platform":"instagram","videoUrl":"...","caption":"..."}]
+- When CEO shares a video file/URL, create an approval request first
+- For TikTok: create approval request with platform="tiktok", videoUrl, caption
+- For Instagram Reels: create approval request with platform="instagram", videoUrl, caption
 - If CEO doesn't have a video yet, tell them: "Ask media-producer for a video prompt, generate it with Kling or Seedance, then share the URL here and I'll post it."
 
 CONTENT CREATION WORKFLOW (no video needed):
 - Generate 3 platform-optimised caption variants in JSON format
-- Post to requested platform using the appropriate variant
+- Create approval request for the requested platform with the appropriate variant
 - For image posts, auto-generate image using the AI image tool if no imageUrl provided
+
+APPROVAL WORKFLOW:
+- Before posting, create an approval request using the approval system
+- Include platform, content, media URL, and scheduled time in the request
+- Return the approval ID to CEO for review
+- Once approved, the post will be automatically scheduled/published
+- If rejected, ask CEO for revisions
 
 Never post without explicit CEO approval unless instructed to auto-publish.`
     });
+  }
+
+  async run(userMessage, userId, env, options = {}) {
+    // Check if this is a post request
+    const lowerMessage = userMessage.toLowerCase();
+    const isPostRequest = lowerMessage.includes('post') || lowerMessage.includes('publish') || lowerMessage.includes('share');
+    
+    if (isPostRequest && !options.skipApproval) {
+      // Parse platform from message
+      let platform = null;
+      if (lowerMessage.includes('tiktok')) platform = 'tiktok';
+      else if (lowerMessage.includes('instagram')) platform = 'instagram';
+      else if (lowerMessage.includes('facebook')) platform = 'facebook';
+      
+      if (platform) {
+        // Generate content first using the base agent
+        const content = await super.run(userMessage, userId, options);
+        
+        try {
+          // Create approval request
+          const approvalRequest = await createApprovalRequest({
+            platform,
+            content,
+            mediaUrl: options.mediaUrl || null,
+            scheduledFor: options.scheduledFor || null,
+            metadata: {
+              originalMessage: userMessage,
+              generatedAt: new Date().toISOString()
+            }
+          }, userId, env);
+          
+          const expiresFormatted = new Date(approvalRequest.expires_at).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' });
+          
+          return `✅ **Approval Request Created**
+
+I've prepared your ${platform} post for review:
+
+**Content Preview:**
+${content.slice(0, 300)}${content.length > 300 ? '...' : ''}
+
+**Approval ID:** ${approvalRequest.id}
+**Status:** Pending approval
+**Expires:** ${expiresFormatted}
+
+To approve this post, use the approval endpoint or dashboard with the approval ID above.
+The post will be published automatically once approved.`;
+        } catch (error) {
+          // If approval system fails, fall back to direct posting
+          return `⚠️ Approval system unavailable. Falling back to direct posting.\n\n${content}`;
+        }
+      }
+    }
+    
+    // Default behavior for non-post requests or when approval is skipped
+    return super.run(userMessage, userId, options);
   }
 }

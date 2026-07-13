@@ -271,6 +271,50 @@ CREATE TRIGGER quality_check_trigger
     FOR EACH ROW
     EXECUTE FUNCTION check_quality_threshold();
 
+-- Approval Queue Table for Social Media Posts
+CREATE TABLE IF NOT EXISTS approval_queue (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    content TEXT NOT NULL,
+    media_url TEXT,
+    scheduled_for TEXT,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'expired')),
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    approved_at TEXT,
+    rejected_at TEXT,
+    rejection_reason TEXT,
+    metadata TEXT
+);
+
+-- Create Indexes for Approval Queue
+CREATE INDEX IF NOT EXISTS idx_approval_queue_user ON approval_queue(user_id);
+CREATE INDEX IF NOT EXISTS idx_approval_queue_status ON approval_queue(status);
+CREATE INDEX IF NOT EXISTS idx_approval_queue_expires ON approval_queue(expires_at);
+
+-- Scheduled Posts Table for Approved Posts
+CREATE TABLE IF NOT EXISTS scheduled_posts (
+    id TEXT PRIMARY KEY,
+    approval_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    content TEXT NOT NULL,
+    media_url TEXT,
+    scheduled_for TEXT NOT NULL,
+    status TEXT DEFAULT 'queued' CHECK (status IN ('queued', 'posted', 'failed', 'cancelled')),
+    post_id TEXT,
+    posted_at TEXT,
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
+-- Create Indexes for Scheduled Posts
+CREATE INDEX IF NOT EXISTS idx_scheduled_posts_approval ON scheduled_posts(approval_id);
+CREATE INDEX IF NOT EXISTS idx_scheduled_posts_status ON scheduled_posts(status);
+CREATE INDEX IF NOT EXISTS idx_scheduled_posts_scheduled ON scheduled_posts(scheduled_for);
+
 -- Create Function for CEO Session Management
 CREATE OR REPLACE FUNCTION create_ceo_session(user_id TEXT, session_token TEXT)
 RETURNS BOOLEAN AS $$

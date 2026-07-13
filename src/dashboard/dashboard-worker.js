@@ -3,6 +3,13 @@
 
 import { validateToken, generateAccessToken } from '../core/jwt-auth.js';
 import { generateImage } from '../tools/image-tool.js';
+import { 
+  getApprovalRequest, 
+  listPendingApprovals, 
+  approveRequest, 
+  rejectRequest, 
+  getApprovalStats 
+} from '../core/approval-manager.js';
 
 export async function handleDashboardAPI(request, env, path) {
   const url = new URL(request.url);
@@ -134,6 +141,100 @@ export async function handleDashboardAPI(request, env, path) {
     if (path === '/api/v1/dashboard/commands' && request.method === 'POST') {
       const body = await request.json();
       return await sendCommand(body, env, corsHeaders);
+    }
+
+    // GET /api/v1/dashboard/approvals - List pending approvals
+    if (path === '/api/v1/dashboard/approvals' && request.method === 'GET') {
+      const userId = url.searchParams.get('userId');
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId parameter' }), { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+      const approvals = await listPendingApprovals(userId, env);
+      return new Response(JSON.stringify({ approvals }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // GET /api/v1/dashboard/approvals/:id - Get specific approval
+    if (path.match(/^\/api\/v1\/dashboard\/approvals\/[^/]+$/) && request.method === 'GET') {
+      const approvalId = path.split('/').pop();
+      const approval = await getApprovalRequest(approvalId, env);
+      if (!approval) {
+        return new Response(JSON.stringify({ error: 'Approval request not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      return new Response(JSON.stringify({ approval }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // POST /api/v1/dashboard/approvals/:id/approve - Approve a request
+    if (path.match(/^\/api\/v1\/dashboard\/approvals\/[^/]+\/approve$/) && request.method === 'POST') {
+      const approvalId = path.split('/')[4];
+      const body = await request.json();
+      const userId = body.userId;
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      try {
+        const approval = await approveRequest(approvalId, userId, env);
+        return new Response(JSON.stringify({ approval }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // POST /api/v1/dashboard/approvals/:id/reject - Reject a request
+    if (path.match(/^\/api\/v1\/dashboard\/approvals\/[^/]+\/reject$/) && request.method === 'POST') {
+      const approvalId = path.split('/')[4];
+      const body = await request.json();
+      const userId = body.userId;
+      const reason = body.reason || 'No reason provided';
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      try {
+        const approval = await rejectRequest(approvalId, userId, reason, env);
+        return new Response(JSON.stringify({ approval }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    // GET /api/v1/dashboard/approvals/stats - Get approval statistics
+    if (path === '/api/v1/dashboard/approvals/stats' && request.method === 'GET') {
+      const userId = url.searchParams.get('userId');
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'Missing userId parameter' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      const stats = await getApprovalStats(userId, env);
+      return new Response(JSON.stringify({ stats }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     return new Response('Endpoint not found', { status: 404, headers: corsHeaders });
