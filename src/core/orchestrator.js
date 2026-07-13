@@ -58,6 +58,7 @@ import { McpLlmAgent } from '../agents/cino/mcp-llm-agent.js';
 import { TechnologyTracker } from '../agents/cino/technology-tracker.js';
 import { DataAnalyst } from '../agents/cino/data-analyst.js';
 import { LegalAdvisor } from '../agents/clo/legal-advisor.js';
+import { CEOAgent } from '../agents/remy/ceo-agent.js';
 import { generateImage, formatImageResponse } from '../tools/image-tool.js';
 import { createRepo, pushFile, pushMultipleFiles, listRepos, triggerWorkflow } from '../tools/github-tool.js';
 import { submitRenderingJob, queueRenderingJob, estimateCost } from '../tools/fal-ai-wrapper.js';
@@ -79,8 +80,8 @@ COMPANY IDENTITY (memorise this — never invent alternative descriptions):
 
 Respond ONLY with valid JSON:
 {
-  "department": "coo|cto|cmo|cfo|cino|clo|direct",
-  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|media-content-director|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|brand-strategist|campaign-manager|audience-analyst|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct",
+  "department": "coo|cto|cmo|cfo|cino|clo|direct|ceo",
+  "agent": "ops-coordinator|quality-ops-reviewer|process-optimizer|data-governance-agent|strategic-planner|meeting-scheduler|reporting-analyst|project-manager|notification-manager|google-drive-agent|analytics-reporter|pdf-generator|quality-control-manager|tech-advisor|devops-monitor|security-auditor|integration-agent|development-advisor|frontend-developer|backend-developer|qa-engineer|database-specialist|cloud-engineer|content-writer|media-content-director|market-analyst|customer-success-agent|social-media-agent|media-producer|email-marketing-agent|brand-strategist|campaign-manager|audience-analyst|finance-planner|risk-assessor|grant-tracker|revenue-analyst|research-agent|idea-generator|trend-spotter|innovation-coach|innovation-analyst|mcp-llm-agent|technology-tracker|data-analyst|legal-advisor|direct|remy",
   "task_type": "brief task description",
   "urgency": "high|medium|low",
   "reasoning": "one sentence"
@@ -133,6 +134,7 @@ Routing rules:
 - cino/technology-tracker: monitor new AI tools, frameworks, LLMs, platforms for MFM competitive edge
 - cino/data-analyst: statistical analysis, D1 data interpretation, forecasting, anomaly detection
 - clo/legal-advisor: contracts, legal compliance, regulations, Malaysian law, IP, employment law, corporate governance, disputes, PDPA, SSM, Bank Negara, legal risk, NDA, terms of service
+- ceo/remy: strategic decisions, C-level meetings, task delegation, company direction, cross-functional coordination, executive decisions
 - direct: greetings, slash commands (/start, /help, /status, /tasks, /metrics, /team, /memo, /clear)
 
 SPECIAL CAPABILITIES (handled automatically before agent routing):
@@ -326,6 +328,7 @@ const AGENT_MAP = {
   'technology-tracker': TechnologyTracker,
   'data-analyst': DataAnalyst,
   'legal-advisor': LegalAdvisor,
+  'remy': CEOAgent,
 };
 
 export async function routeMessage(message, userId, env) {
@@ -524,7 +527,7 @@ async function handleSlashCommand(text, userId, env) {
       const imgResult = await generateImage(args, env);
       if (imgResult.error) return `⚠️ ${imgResult.error}`;
       const formatted = formatImageResponse(imgResult, 'mfm-corporation-telegram-bot.mrhan-fx.workers.dev');
-      return typeof formatted === 'string' ? formatted : formatted.text;
+      return formatted;
     }
 
     case '/github': {
