@@ -99,11 +99,15 @@ export async function getMetrics(agent, days = 7, env) {
 }
 
 export async function getAllRecentTasks(limit = 10, env) {
-  if (!env.db) return [];
-  const result = await env.db.prepare(
-    'SELECT agent, input, output, status, quality_score, created_at FROM tasks ORDER BY created_at DESC LIMIT ?'
-  ).bind(limit).all();
-  return result.results || [];
+  if (!env || !env.db) return [];
+  try {
+    const result = await env.db.prepare(
+      'SELECT agent, input, output, status, quality_score, created_at FROM tasks ORDER BY created_at DESC LIMIT ?'
+    ).bind(limit).all();
+    return result.results || [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getAllMetrics(days = 7, env) {
@@ -194,17 +198,21 @@ export async function setTaskContentType(id, contentType, env) {
 }
 
 export async function getTopPerformingAgents(limit = 5, env) {
-  if (!env.db) return [];
-  const result = await env.db.prepare(`
-    SELECT agent,
-           SUM(tasks_completed) AS total_tasks,
-           CAST(SUM(avg_quality_score * tasks_completed) / NULLIF(SUM(tasks_completed), 0) AS REAL) AS avg_score
-    FROM metrics
-    WHERE date >= date('now', '-7 days')
-    GROUP BY agent
-    HAVING total_tasks > 0
-    ORDER BY avg_score DESC
-    LIMIT ?
-  `).bind(limit).all();
-  return result.results || [];
+  if (!env || !env.db) return [];
+  try {
+    const result = await env.db.prepare(`
+      SELECT agent,
+             SUM(tasks_completed) AS total_tasks,
+             CAST(SUM(avg_quality_score * tasks_completed) / NULLIF(SUM(tasks_completed), 0) AS REAL) AS avg_score
+      FROM metrics
+      WHERE date >= date('now', '-7 days')
+      GROUP BY agent
+      HAVING total_tasks > 0
+      ORDER BY avg_score DESC
+      LIMIT ?
+    `).bind(limit).all();
+    return result.results || [];
+  } catch {
+    return [];
+  }
 }

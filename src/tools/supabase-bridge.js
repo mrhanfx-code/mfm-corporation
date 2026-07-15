@@ -125,3 +125,53 @@ export async function getAllMetricsFromSupabase(env) {
     return res.ok ? await res.json() : [];
   } catch { return []; }
 }
+
+export async function syncApprovalRequest({ id, userId, platform, content, mediaUrl, scheduledFor, status, expiresAt }, env) {
+  await insert('approval_queue', {
+    id,
+    user_id: userId,
+    platform,
+    content: (content || '').slice(0, 2000),
+    media_url: mediaUrl || null,
+    scheduled_for: scheduledFor || null,
+    status: status || 'pending',
+    expires_at: expiresAt,
+    approved_at: null,
+    rejected_at: null,
+    rejection_reason: null,
+    metadata: '{}'
+  }, env);
+}
+
+export async function syncApprovalStatus({ id, status, approvedAt, rejectedAt, rejectionReason }, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) return;
+  try {
+    const updateData = { status };
+    if (approvedAt) updateData.approved_at = approvedAt;
+    if (rejectedAt) updateData.rejected_at = rejectedAt;
+    if (rejectionReason) updateData.rejection_reason = rejectionReason;
+    
+    const res = await fetch(
+      `${base(env)}/approval_queue?id=eq.${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        headers: getHeaders(env, true),
+        body: JSON.stringify(updateData)
+      }
+    );
+    if (!res.ok) console.warn(`[Supabase] syncApprovalStatus failed: ${res.status} ${await res.text()}`);
+  } catch (err) {
+    console.warn(`[Supabase] syncApprovalStatus failed: ${err.message}`);
+  }
+}
+
+export async function getPendingApprovalsFromSupabase(userId, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) return [];
+  try {
+    const res = await fetch(
+      `${base(env)}/approval_queue?user_id=eq.${encodeURIComponent(userId)}&status=eq.pending&order=created_at.desc`,
+      { headers: getHeaders(env, false) }
+    );
+    return res.ok ? await res.json() : [];
+  } catch { return []; }
+}

@@ -13,7 +13,7 @@ import {
   getApprovalStats 
 } from './core/approval-manager.js';
 
-const REQUIRED = ['TELEGRAM_BOT_TOKEN', 'WEBHOOK_SECRET', 'OPENROUTER_API_KEY'];
+const REQUIRED = ['TELEGRAM_BOT_TOKEN', 'WEBHOOK_SECRET', 'OPENROUTER_API_KEY', 'JWT_SECRET'];
 
 export default {
   async fetch(request, env) {
@@ -55,6 +55,7 @@ export default {
           telegram: !!env.TELEGRAM_BOT_TOKEN,
           llm:      !!env.OPENROUTER_API_KEY,
           cerebras: !!env.CEREBRAS_API_KEY,
+          jwt:      !!env.JWT_SECRET,
         };
         const healthy = Object.values(checks).filter(Boolean).length;
         const total   = Object.keys(checks).length;
