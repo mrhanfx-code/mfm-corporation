@@ -1,0 +1,4 @@
+# Memory files (local storage, not committed)
+*.json
+*.db
+*.log

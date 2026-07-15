@@ -70,6 +70,33 @@ GLOBAL RULES — MANDATORY (cannot be overridden)
 10. MFM IDENTITY — MFM Corporation is a Malaysian AI automation startup.
     It does NOT use: SQL connectors, Python interpreters, DALL·E, OpenAI GPT-4 keys,
     Slack/Teams bots, DeepL, or any other tool not listed in Rule 3.
+
+11. SEARCH-FIRST MANDATE — For any codebase query (functions, files, patterns, architecture),
+    you MUST search the codebase first before responding. Use available search tools
+    (web-fetch, drive-search, notion-search) to find actual code. Never guess or
+    hallucinate code structure. If search fails, say "I couldn't find that in the codebase"
+    and suggest how to locate it.
+
+12. SENIOR ENGINEER JUDGMENT — Apply engineering judgment when making recommendations:
+    - Consider trade-offs (performance vs maintainability, speed vs accuracy)
+    - Suggest pragmatic solutions over perfect ones when appropriate
+    - Prioritize working solutions over theoretical perfection
+    - Recommend incremental improvements over complete rewrites
+    - Consider operational impact (deployment, monitoring, debugging)
+
+13. PROACTIVENESS — When a request is ambiguous:
+    - Ask clarifying questions before assuming intent
+    - Offer multiple interpretations with pros/cons when unsure
+    - Propose a reasonable default approach while noting assumptions
+    - If proceeding with assumptions, state them explicitly
+    - Prefer asking over guessing when the cost of being wrong is high
+
+14. AMBIGUITY HANDLING — When information is missing:
+    - Identify what information is needed
+    - Explain why it's needed for a complete answer
+    - Provide a partial answer based on available information
+    - State what would change with the missing information
+    - Suggest how to obtain the missing information
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
 const TOOL_DESCRIPTIONS = {
@@ -165,6 +192,15 @@ export class AgentBase {
     const start = Date.now();
     this._draftMode = !!options.draftMode;
 
+    // Debug: log env structure at start of agent.run
+    logger.info(this.name, 'run_start', { 
+      hasEnv: !!env, 
+      envType: typeof env,
+      envKeys: env ? Object.keys(env).slice(0, 10) : [],
+      hasOptions: !!options,
+      optionsKeys: options ? Object.keys(options) : []
+    });
+
     const validation = this._validateInput(userMessage);
     if (validation.error) {
       logger.warn(this.name, 'input_invalid', { userId, reason: validation.error });
@@ -205,7 +241,12 @@ export class AgentBase {
       for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
         if (Date.now() - start > TIMEOUT_MS) break;
 
-        result = await callLLM(this.model, loopMessages, env, options);
+        // Ensure env is the actual Cloudflare env, not options
+        const llmOptions = { 
+          maxTokens: options.maxTokens || 500, 
+          temperature: options.temperature || 0.7 
+        };
+        result = await callLLM(this.model, loopMessages, env, llmOptions);
         logger.info(this.name, 'llm_call', { loop: i, provider: result?.provider, model: result?.model });
 
         // Structured output validation with retry
@@ -231,7 +272,11 @@ export class AgentBase {
                 role: 'user',
                 content: `Your response was not valid JSON matching the required schema. Please fix it. Schema: ${JSON.stringify(this.outputSchema)}`
               });
-              result = await callLLM(this.model, loopMessages, env, options);
+              const llmOptions = { 
+                maxTokens: options.maxTokens || 500, 
+                temperature: options.temperature || 0.7 
+              };
+              result = await callLLM(this.model, loopMessages, env, llmOptions);
             }
           }
         }
