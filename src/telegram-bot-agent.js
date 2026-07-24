@@ -5,8 +5,15 @@ import { routeMessage } from './core/orchestrator.js';
 import { sendTelegramMessage, sendTyping } from './tools/telegram-tool.js';
 import { handleDashboardAPI } from './dashboard/dashboard-worker.js';
 import { processQueuedJob } from './tools/fal-ai-wrapper.js';
+import { 
+  getApprovalRequest, 
+  listPendingApprovals, 
+  approveRequest, 
+  rejectRequest, 
+  getApprovalStats 
+} from './core/approval-manager.js';
 
-const REQUIRED = ['TELEGRAM_BOT_TOKEN', 'WEBHOOK_SECRET', 'OPENROUTER_API_KEY'];
+const REQUIRED = ['TELEGRAM_BOT_TOKEN', 'WEBHOOK_SECRET', 'OPENROUTER_API_KEY', 'JWT_SECRET'];
 
 export default {
   async fetch(request, env) {
@@ -48,6 +55,7 @@ export default {
           telegram: !!env.TELEGRAM_BOT_TOKEN,
           llm:      !!env.OPENROUTER_API_KEY,
           cerebras: !!env.CEREBRAS_API_KEY,
+          jwt:      !!env.JWT_SECRET,
         };
         const healthy = Object.values(checks).filter(Boolean).length;
         const total   = Object.keys(checks).length;
@@ -194,6 +202,65 @@ export default {
         return new Response('OK');
       }
 
+      // Handle approval commands
+      const text = message.text.trim();
+      
+      if (text === '/approvals') {
+        try {
+          const approvals = await listPendingApprovals(String(userId), env);
+          if (approvals.length === 0) {
+            await sendTelegramMessage(chatId, '📋 No pending approvals.', env);
+          } else {
+            let messageText = `📋 *Pending Approvals (${approvals.length})*\n\n`;
+            approvals.forEach((a, i) => {
+              const platform = a.platform.toUpperCase();
+              const preview = a.content.slice(0, 100) + (a.content.length > 100 ? '...' : '');
+              messageText += `${i + 1}. *${platform}*\n`;
+              messageText += `   ID: \`${a.id}\`\n`;
+              messageText += `   Preview: ${preview}\n`;
+              messageText += `   Expires: ${new Date(a.expires_at).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}\n\n`;
+            });
+            messageText += 'Use /approve <id> or /reject <id> <reason>';
+            await sendTelegramMessage(chatId, messageText, env);
+          }
+        } catch (error) {
+          await sendTelegramMessage(chatId, `❌ Error fetching approvals: ${error.message}`, env);
+        }
+        return new Response('OK');
+      }
+
+      if (text.startsWith('/approve ')) {
+        const approvalId = text.split(' ')[1];
+        if (!approvalId) {
+          await sendTelegramMessage(chatId, 'Usage: /approve <approval_id>', env);
+          return new Response('OK');
+        }
+        try {
+          const approval = await approveRequest(approvalId, String(userId), env);
+          await sendTelegramMessage(chatId, `✅ *Approved*\n\nPlatform: ${approval.platform.toUpperCase()}\nStatus: ${approval.status}\nApproved at: ${new Date(approval.approved_at).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`, env);
+        } catch (error) {
+          await sendTelegramMessage(chatId, `❌ Approval failed: ${error.message}`, env);
+        }
+        return new Response('OK');
+      }
+
+      if (text.startsWith('/reject ')) {
+        const parts = text.split(' ');
+        const approvalId = parts[1];
+        const reason = parts.slice(2).join(' ') || 'No reason provided';
+        if (!approvalId) {
+          await sendTelegramMessage(chatId, 'Usage: /reject <approval_id> <reason>', env);
+          return new Response('OK');
+        }
+        try {
+          const approval = await rejectRequest(approvalId, String(userId), reason, env);
+          await sendTelegramMessage(chatId, `❌ *Rejected*\n\nPlatform: ${approval.platform.toUpperCase()}\nReason: ${reason}\nStatus: ${approval.status}`, env);
+        } catch (error) {
+          await sendTelegramMessage(chatId, `❌ Rejection failed: ${error.message}`, env);
+        }
+        return new Response('OK');
+      }
+
       const lastUpdateKey = `last_update:${userId}`;
       if (env.KV) {
         const lastId = await env.KV.get(lastUpdateKey);
@@ -300,12 +367,13 @@ export default {
     if (url.pathname === '/ask') {
       if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
       if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405, headers: cors });
-      if (!env.DASHBOARD_SECRET) {
+      const dashboardSecret = env.DASHBOARD_SECRET || env.DASHBOARD_API_TOKEN;
+      if (!dashboardSecret) {
         return new Response(JSON.stringify({ error: 'DASHBOARD_SECRET not configured. Run: wrangler secret put DASHBOARD_SECRET' }),
           { status: 503, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
       const token = (request.headers.get('Authorization') || '').replace('Bearer ', '').trim();
-      if (token !== env.DASHBOARD_SECRET) {
+      if (token !== dashboardSecret) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }),
           { status: 401, headers: { ...cors, 'Content-Type': 'application/json' } });
       }
